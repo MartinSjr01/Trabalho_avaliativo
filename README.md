@@ -12,4 +12,5 @@ Projeto-POO
 
 
 TIME JOAO
-[MARTIN]https://github.com/MartinSjr01
+Martin[https://github.com/MartinSjr01]
+Thomás[https://github.com/avilathomas]
