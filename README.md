@@ -17,3 +17,4 @@ TIME JOAO
 
 [Martin](https://github.com/MartinSjr01)
 [Thomás](https://github.com/avilathoma)
+[Isabelle](https://github.com/bellemichielin)
