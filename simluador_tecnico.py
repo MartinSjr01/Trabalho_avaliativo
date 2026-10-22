@@ -30,7 +30,8 @@ class Jogador:
         self.posicao = posicao
 
     def sacar(self):
-        ...
+        qualidade = random.uniform(1, 100)
+        return qualidade
 
     def receber(self):
         ...
@@ -56,12 +57,12 @@ class Time:
         self.tecnicos = tecnicos
 
     def escolher_sacador(self):
-        self.rotacao[0].sacar()
+        return self.rotacao[0]
 
     def escolher_receptor(self):
         self.rotacao[random.randint(0, 5)].receber() # por enquanto um jogador aleatório, depois, adionar mais probablidade dos ponteiros e do líbero receberem
 
-    def esolher_levantador(self):
+    def escolher_levantador(self):
         ...
 
     def escolher_atacante(self):
@@ -86,5 +87,15 @@ class Partida:
         time_sacador = self.times[indice]
         time_receptor = self.times[1 - indice]
 
-        time_sacador.escolher_sacador()
-        time_receptor.escolher_receptor()
+        sacador = time_sacador.escolher_sacador()
+        qualidade_saque = sacador.sacar()
+        receptor = time_receptor.escolher_receptor()
+        qualidade_passe = receptor.receber(qualidade_saque)
+        levantador = time_receptor.escolher_levantador()
+        qualidade_levantamento = levantador.levantar(qualidade_passe)
+        atacante = time_receptor.escolher_atacante()
+        qualidade_ataque = atacante.atacar(qualidade_levantamento)
+        bloqueador = time_sacador.escolher_bloqueador()
+        qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
+        defensor = time_sacador.escolher_defensor()
+        qualidade_passe = defensor.defender(qualidade_bloqueio)
