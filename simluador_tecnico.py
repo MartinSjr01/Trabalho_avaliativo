@@ -76,50 +76,70 @@ class Time:
 
 class Placar:
     """Classe que contabilizará os pontos e sets"""
-    def __init__(self):
-        self.pontos = [0, 0]
-        self.sets = [0, 0]
 
-    def aumentar_pontos(self, indice_time: int):
-        self.pontos[indice_time] += 1
+    PONTOS_SET = 25
+    PONTOS_TIE_BREAK = 15
+    SETS_PARA_VENCER = 3
 
-    def aumentar_sets(self, indice_time: int):
-        self.sets[indice_time] += 1
+    def __init__(self, times: list[Time]):
+        self.times = times
+        self.pontos = {times[0]: 0, times[1]: 0}
+        self.sets = {times[0]: 0, times[1]: 0}
+
+    def aumentar_pontos(self, time: Time):
+        self.pontos[time] += 1
+
+    def aumentar_sets(self, time: Time):
+        self.sets[time] += 1
+
+    def zerar_pontos(self):
+        for time in self.pontos:
+            self.pontos[time] = 0
 
     def set_em_andamento(self):
         """Retorna True se o set não acabou"""
-        return (self.pontos[0] < 25 or self.pontos[1] < 25) or abs(self.pontos[0] - self.pontos[1]) < 2
+        pontos = list(self.pontos.values())
+
+        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1):
+            max_pontos = self.PONTOS_SET
+        else:
+            max_pontos = self.PONTOS_TIE_BREAK
+
+        return max(pontos) < max_pontos or max(pontos) - min(pontos) < 2
 
     def partida_em_andamento(self):
         """Retorna True se a partida não acabou"""
-        return self.sets[0] < 3 and self.sets[1] < 3
+        return max(self.sets.values()) < self.SETS_PARA_VENCER
 
 
 class Partida:
     """Classe que comandará a partida"""
-    def __init__(self, times: list[Time], placar: Placar):
-        self.times = times
+    def __init__(self, placar: Placar):
         self.placar = placar
+        self.times = self.placar.times
 
     def jogar_moeda(self):
         return random.randint(0, 1)
 
     def disputar_partida(self):
-        indice_sacador = self.jogar_moeda()
-        indice_receptor = 1 - indice_sacador
+        indice = self.jogar_moeda()
+        time_sacador = self.times[indice]
+        time_receptor = self.times[1 - indice]
 
         while self.placar.partida_em_andamento():
-            sacador = self.times[indice_sacador].escolher_sacador()
+            sacador = time_sacador.escolher_sacador()
             qualidade_saque = sacador.sacar()
-            receptor = self.times[indice_receptor].escolher_receptor()
+            receptor = time_receptor.escolher_receptor()
             qualidade_passe = receptor.receber(qualidade_saque)
 
             while self.placar.set_em_andamento():
-                levantador = self.times[indice_receptor].escolher_levantador()
+                levantador = time_receptor.escolher_levantador()
                 qualidade_levantamento = levantador.levantar(qualidade_passe)
-                atacante = self.times[indice_receptor].escolher_atacante()
+                atacante = time_receptor.escolher_atacante()
                 qualidade_ataque = atacante.atacar(qualidade_levantamento)
-                bloqueador = self.times[indice_sacador].escolher_bloqueador()
+                bloqueador = time_sacador.escolher_bloqueador()
                 qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
-                defensor = self.times[indice_sacador].escolher_defensor()
+                defensor = time_sacador.escolher_defensor()
                 qualidade_passe = defensor.defender(qualidade_bloqueio)
+
+            self.placar.zerar_pontos()
