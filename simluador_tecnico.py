@@ -74,7 +74,7 @@ class Time:
             self.rotacao,
             weights=[pesos[j.posicao] for j in self.rotacao],
         )[0]
-
+  
     def escolher_levantador(self, passador: Jogador) -> Jogador:
         pesos = {
             Posicao.PONTEIRO: 6,
@@ -83,8 +83,11 @@ class Time:
             Posicao.CENTRAL: 8,
             Posicao.LEVANTADOR: 70,
             }
+        
+        possiveis_levantadores = self.rotacao.remove(passador) #ele escolhe quem vai levantar excluindo quem passou
+        
         return random.choices(
-            self.rotacao,
+            possiveis_levantadores,
             weights=[pesos[j.posicao] for j in self.rotacao],
         )[0]
 
@@ -96,8 +99,11 @@ class Time:
             Posicao.CENTRAL: 20,
             Posicao.LEVANTADOR: 5,
             }
+
+        possiveis_atacantes = self.rotacao.remove(levantador) #ele escolhe quem vai atacar excluindo quem levantou
+        
         return random.choices(
-        self.rotacao,
+        possiveis_atacantes,
         weights=[pesos[j.posicao] for j in self.rotacao],
          )[0]
 
@@ -109,8 +115,11 @@ class Time:
             Posicao.CENTRAL: 60,
             Posicao.LEVANTADOR: 10,
             }
+
+        possiveis_bloqueadores = self.rotacao.remove(0,4,5) #ele nao deixa quem esta na parte de fundo de quadra bloquear
+
         return random.choices(
-                self.rotacao,
+                possiveis_bloqueadores,
                 weights=[pesos[j.posicao] for j in self.rotacao],
                 )[0]
 
@@ -122,8 +131,11 @@ class Time:
             Posicao.CENTRAL: 5,
             Posicao.LEVANTADOR: 16,
             }
+
+        possiveis_defensores = self.rotacao.remove(bloqueadores) #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
+        
         return random.choices(
-            self.rotacao,
+            possiveis_defensores,
             weights=[pesos[j.posicao] for j in self.rotacao],
                )[0]
 
