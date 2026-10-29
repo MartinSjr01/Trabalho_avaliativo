@@ -16,10 +16,7 @@ class Tecnico:
         self.nome = nome
 
     def substituir(self):
-        ...
 
-    def pedir_tempo(self):
-        ...
 
 
 class Jogador:
@@ -32,28 +29,31 @@ class Jogador:
     def sacar(self):
         ...
 
-    def receber(self):
-        ...
+    def receber(self, qualidade: float):
+        return random.triangular(1, 100, mode = 100 - qualidade)
 
-    def levantar(self):
-        ...
+    def levantar(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
 
-    def atacar(self):
-        ...
+    def atacar(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
 
-    def bloquear(self):
-        ...
+    def bloquear(self, qualidade: float):
+        return random.triangular(1, 100, mode = 100 - qualidade)
 
-    def defender(self):
-        ...
+    def defender(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
 
     
 class Time:
     """Classe que decide o jogador que executa ações"""
+    class Time:
     def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]):
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
         self.tecnicos = tecnicos
+        self.tempos_restantes = 2
+        self.substituicoes_restantes = 6
 
     def escolher_sacador(self):
         self.rotacao[0].sacar()
