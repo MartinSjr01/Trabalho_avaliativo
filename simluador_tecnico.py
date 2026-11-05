@@ -21,10 +21,16 @@ class Tecnico:
 
 class Jogador:
     """Classe que executa ações"""
-    def __init__(self, nome: str, camisa: int, posicao: Posicao):
+    def __init__(self, nome: str, camisa: int, posicao: Posicao, ataque: float, passe: float, levantamento: float, saque: float, bloqueio: float, alcance: float):
         self.nome = nome
         self.camisa = camisa
         self.posicao = posicao
+        self.ataque = ataque
+        self.passe = passe
+        self.levantamento = levantamento
+        self.saque = saque
+        self.bloqueio = bloqueio
+        self.alcance = alcance
 
     def sacar(self):
         qualidade = random.uniform(1, 100)
