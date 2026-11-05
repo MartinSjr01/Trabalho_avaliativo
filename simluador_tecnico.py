@@ -1,0 +1,234 @@
+import random
+from enum import Enum
+
+
+class Posicao (Enum):
+    LEVANTADOR = 1
+    OPOSTO = 2
+    PONTEIRO = 3
+    CENTRAL = 4
+    LIBERO = 5
+
+
+class Tecnico:
+    """Definição da classe Tecnico"""
+    def __init__(self, nome: str):
+        self.nome = nome
+
+    def substituir(self):
+        ...
+
+
+class Jogador:
+    """Classe que executa ações"""
+    def __init__(self, nome: str, camisa: int, posicao: Posicao, ataque: float, passe: float, levantamento: float, saque: float, bloqueio: float, alcance: float):
+        self.nome = nome
+        self.camisa = camisa
+        self.posicao = posicao
+        self.ataque = ataque
+        self.passe = passe
+        self.levantamento = levantamento
+        self.saque = saque
+        self.bloqueio = bloqueio
+        self.alcance = alcance
+
+    def sacar(self):
+        qualidade = random.uniform(1, 100)
+        return qualidade
+
+    def receber(self, qualidade: float):
+        return random.triangular(1, 100, mode = 100 - qualidade)
+
+    def levantar(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
+
+    def atacar(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
+
+    def bloquear(self, qualidade: float):
+        return random.triangular(1, 100, mode = 100 - qualidade)
+
+    def defender(self, qualidade: float):
+        return random.triangular(1, 100, mode = qualidade)
+
+    
+class Time:
+    """Classe que decide o jogador que executa ações"""
+    def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]):
+        self.jogadores = jogadores
+        self.rotacao = jogadores[:6]
+        self.tecnicos = tecnicos
+        self.tempos_restantes = 2
+        self.substituicoes_restantes = 6
+
+    def rodar(self):
+        """Sentido horário: o jogador da posição 2 vai para o saque"""
+        self.rotacao = self.rotacao[1:] + self.rotacao[:1]
+
+    def escolher_sacador(self) -> Jogador:
+        return self.rotacao[0]
+
+    def escolher_receptor(self) -> Jogador:
+        pesos = {
+            Posicao.PONTEIRO: 45,
+            Posicao.LIBERO: 50,
+            Posicao.OPOSTO: 1.5,
+            Posicao.CENTRAL: 3,
+            Posicao.LEVANTADOR: 0.5,
+        }
+        return random.choices(
+            self.rotacao,
+            weights=[pesos[j.posicao] for j in self.rotacao],
+        )[0]
+  
+    def escolher_levantador(self, passador: Jogador) -> Jogador:
+        pesos = {
+            Posicao.PONTEIRO: 6,
+            Posicao.LIBERO: 15,
+            Posicao.OPOSTO: 1,
+            Posicao.CENTRAL: 8,
+            Posicao.LEVANTADOR: 70,
+            }
+        
+        possiveis_levantadores = self.rotacao.remove(passador) #ele escolhe quem vai levantar excluindo quem passou
+        
+        return random.choices(
+            possiveis_levantadores,
+            weights=[pesos[j.posicao] for j in self.rotacao],
+        )[0]
+
+    def escolher_atacante(self, levantador: Jogador) -> Jogador:
+        pesos = {
+            Posicao.PONTEIRO: 35,
+            Posicao.LIBERO: 0,
+            Posicao.OPOSTO: 40,
+            Posicao.CENTRAL: 20,
+            Posicao.LEVANTADOR: 5,
+            }
+
+        possiveis_atacantes = self.rotacao.remove(levantador) #ele escolhe quem vai atacar excluindo quem levantou
+        
+        return random.choices(
+        possiveis_atacantes,
+        weights=[pesos[j.posicao] for j in self.rotacao],
+         )[0]
+
+    def escolher_bloqueadores(self) -> list[Jogador]:
+        pesos = {
+            Posicao.PONTEIRO: 15,
+            Posicao.LIBERO: 0,
+            Posicao.OPOSTO: 15,
+            Posicao.CENTRAL: 60,
+            Posicao.LEVANTADOR: 10,
+            }
+
+        possiveis_bloqueadores = self.rotacao.remove(0,4,5) #ele nao deixa quem esta na parte de fundo de quadra bloquear
+
+        return random.choices(
+                possiveis_bloqueadores,
+                weights=[pesos[j.posicao] for j in self.rotacao],
+                )[0]
+
+    def escolher_defensor(self, bloqueadores: list[Jogador]) -> Jogador:
+        pesos = {
+            Posicao.PONTEIRO: 25,
+            Posicao.LIBERO: 40,
+            Posicao.OPOSTO: 14,
+            Posicao.CENTRAL: 5,
+            Posicao.LEVANTADOR: 16,
+            }
+
+        possiveis_defensores = self.rotacao.remove(bloqueadores) #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
+        
+        return random.choices(
+            possiveis_defensores,
+            weights=[pesos[j.posicao] for j in self.rotacao],
+               )[0]
+
+
+class Placar:
+    """Classe que contabilizará os pontos e sets"""
+
+    PONTOS_SET = 25
+    PONTOS_TIE_BREAK = 15
+    SETS_PARA_VENCER = 3
+
+    def __init__(self, times: list[Time]):
+        self.times = times
+        self.pontos = {times[0]: 0, times[1]: 0}
+        self.sets = {times[0]: 0, times[1]: 0}
+
+    def aumentar_pontos(self, time: Time):
+        self.pontos[time] += 1
+
+    def aumentar_sets(self, time: Time):
+        self.sets[time] += 1
+
+    def zerar_pontos(self):
+        for time in self.pontos:
+            self.pontos[time] = 0
+
+    def set_em_andamento(self):
+        """Retorna True se o set não acabou"""
+        pontos = list(self.pontos.values())
+
+        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1):
+            max_pontos = self.PONTOS_SET
+        else:
+            max_pontos = self.PONTOS_TIE_BREAK
+
+        return max(pontos) < max_pontos or max(pontos) - min(pontos) < 2
+
+    def partida_em_andamento(self):
+        """Retorna True se a partida não acabou"""
+        return max(self.sets.values()) < self.SETS_PARA_VENCER
+
+
+class Juiz:
+    """Classe que define os erros e acertos dos jogadores"""                                                                                            
+    def acertou_jogada(self, qualidade: float):
+        return qualidade > 15
+
+
+class Partida:
+    """Classe que comandará a partida"""
+    def __init__(self, placar: Placar, juiz: Juiz):
+        self.placar = placar
+        self.times = self.placar.times
+        self.juiz = juiz
+
+    def jogar_moeda(self):
+        return random.randint(0, 1)
+
+    def disputar_partida(self):
+        indice = self.jogar_moeda()
+        time_sacador = self.times[indice]
+        time_receptor = self.times[1 - indice]
+
+        while self.placar.partida_em_andamento():
+            sacador = time_sacador.escolher_sacador()
+            qualidade_saque = sacador.sacar()
+            if not self.juiz.acertou_jogada(qualidade_saque):
+                self.placar.aumentar_pontos(time_receptor)
+            receptor = time_receptor.escolher_receptor()
+            qualidade_passe = receptor.receber(qualidade_saque)
+            if not self.juiz.acertou_jogada(qualidade_passe):
+                self.placar.aumentar_pontos(time_sacador)
+
+            while self.placar.set_em_andamento():
+                levantador = time_receptor.escolher_levantador()
+                qualidade_levantamento = levantador.levantar(qualidade_passe)
+                if not self.juiz.acertou_jogada(qualidade_levantamento):
+                    self.placar.aumentar_pontos(time_sacador)
+                atacante = time_receptor.escolher_atacante()
+                qualidade_ataque = atacante.atacar(qualidade_ataque)
+                if not self.juiz.acertou_jogada(qualidade_ataque):
+                    self.placar.aumentar_pontos(time_sacador)
+                bloqueador = time_sacador.escolher_bloqueador()
+                qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
+                defensor = time_sacador.escolher_defensor()
+                qualidade_passe = defensor.defender(qualidade_bloqueio)
+                if not self.juiz.acertou_jogada(qualidade_passe):
+                    self.juiz.aumentar_pontos(time_receptor)
+
+            self.placar.zerar_pontos()
