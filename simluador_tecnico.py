@@ -16,7 +16,7 @@ class Tecnico:
         self.nome = nome
 
     def substituir(self):
-
+        ...
 
 
 class Jogador:
@@ -48,7 +48,6 @@ class Jogador:
     
 class Time:
     """Classe que decide o jogador que executa ações"""
-    class Time:
     def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]):
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
@@ -140,37 +139,6 @@ class Time:
             weights=[pesos[j.posicao] for j in self.rotacao],
                )[0]
 
-class Partida:
-    """Classe que comandará a partida"""
-    def __init__(self, placar: Placar):
-        self.placar = placar
-        self.times = self.placar.times
-
-    def jogar_moeda(self):
-        return random.randint(0, 1)
-
-    def disputar_partida(self):
-        indice = self.jogar_moeda()
-        time_sacador = self.times[indice]
-        time_receptor = self.times[1 - indice]
-
-        while self.placar.partida_em_andamento():
-            sacador = time_sacador.escolher_sacador()
-            qualidade_saque = sacador.sacar()
-            receptor = time_receptor.escolher_receptor()
-            qualidade_passe = receptor.receber(qualidade_saque)
-
-            while self.placar.set_em_andamento():
-                levantador = time_receptor.escolher_levantador()
-                qualidade_levantamento = levantador.levantar(qualidade_passe)
-                atacante = time_receptor.escolher_atacante()
-                qualidade_ataque = atacante.atacar(qualidade_levantamento)
-                bloqueador = time_sacador.escolher_bloqueador()
-                qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
-                defensor = time_sacador.escolher_defensor()
-                qualidade_passe = defensor.defender(qualidade_bloqueio)
-
-            self.placar.zerar_pontos()
 
 class Placar:
     """Classe que contabilizará os pontos e sets"""
@@ -208,3 +176,53 @@ class Placar:
     def partida_em_andamento(self):
         """Retorna True se a partida não acabou"""
         return max(self.sets.values()) < self.SETS_PARA_VENCER
+
+
+class Juiz:
+    """Classe que define os erros e acertos dos jogadores"""                                                                                            
+    def acertou_jogada(self, qualidade: float):
+        return qualidade > 15
+
+
+class Partida:
+    """Classe que comandará a partida"""
+    def __init__(self, placar: Placar, juiz: Juiz):
+        self.placar = placar
+        self.times = self.placar.times
+        self.juiz = juiz
+
+    def jogar_moeda(self):
+        return random.randint(0, 1)
+
+    def disputar_partida(self):
+        indice = self.jogar_moeda()
+        time_sacador = self.times[indice]
+        time_receptor = self.times[1 - indice]
+
+        while self.placar.partida_em_andamento():
+            sacador = time_sacador.escolher_sacador()
+            qualidade_saque = sacador.sacar()
+            if not self.juiz.acertou_jogada(qualidade_saque):
+                self.placar.aumentar_pontos(time_receptor)
+            receptor = time_receptor.escolher_receptor()
+            qualidade_passe = receptor.receber(qualidade_saque)
+            if not self.juiz.acertou_jogada(qualidade_passe):
+                self.placar.aumentar_pontos(time_sacador)
+
+            while self.placar.set_em_andamento():
+                levantador = time_receptor.escolher_levantador()
+                qualidade_levantamento = levantador.levantar(qualidade_passe)
+                if not self.juiz.acertou_jogada(qualidade_levantamento):
+                    self.placar.aumentar_pontos(time_sacador)
+                atacante = time_receptor.escolher_atacante()
+                qualidade_ataque = atacante.atacar(qualidade_ataque)
+                if not self.juiz.acertou_jogada(qualidade_ataque):
+                    self.placar.aumentar_pontos(time_sacador)
+                bloqueador = time_sacador.escolher_bloqueador()
+                qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
+                defensor = time_sacador.escolher_defensor()
+                qualidade_passe = defensor.defender(qualidade_bloqueio)
+                if not self.juiz.acertou_jogada(qualidade_passe):
+                    self.juiz.aumentar_pontos(time_receptor)
+
+            self.placar.zerar_pontos()
