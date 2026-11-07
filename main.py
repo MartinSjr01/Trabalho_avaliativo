@@ -1,3 +1,4 @@
+
 from simulador_tecnico import *
 """EXPLICAÇÃO DO JOGO"""
 print("O simulador de técnico de vôlei é passeado em como você montaria o seu time e iria lidar com as consequências de suas escolhas.")
@@ -36,11 +37,38 @@ tecnico2 = Tecnico(nome_tecnico2, time_tecnico2)
 n = int(input(f"Quantos jogadores o {tecnico1.nome} terá? (mínimo 7 e máximo 16): "))
 for i in range(n):
     nome = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    camisa = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    posicao = input(f"Jogador {i+1}: Escreva o nome do jogador: ") 
-    ataque = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    passe = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    levantamento= input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    saque = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    bloqueio = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    alcance = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
+    camisa = input(f"Jogador {i+1}: Escreva o numero da camisa: ")
+    posicao = input(f"Jogador {i+1}: Escreva qual a posição do jogador: ") 
+    ataque = input(f"Jogador {i+1}: Escreva a qualidade de ataque: ")
+    passe = input(f"Jogador {i+1}: Escreva a qualidade de passe: ")
+    levantamento= input(f"Jogador {i+1}: Escreva a qualidade de levantamento: ")
+    saque = input(f"Jogador {i+1}: Escreva a qualidade de saque: ")
+    bloqueio = input(f"Jogador {i+1}: Escreva a qualidade de bloqueio: ")
+    alcance = input(f"Jogador {i+1}: Escreva o alcance vertical: ")
+m = int(input(f"Quantos jogadores o {tecnico2.nome} terá? (mínimo 7 e máximo 16): "))
+for i in range(m):
+    nome = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
+    camisa = input(f"Jogador {i+1}: Escreva o numero da camisa: ")
+    posicao = input(f"Jogador {i+1}: Escreva qual a posição do jogador: ") 
+    ataque = input(f"Jogador {i+1}: Escreva a qualidade de ataque: ")
+    passe = input(f"Jogador {i+1}: Escreva a qualidade de passe: ")
+    levantamento= input(f"Jogador {i+1}: Escreva a qualidade de levantamento: ")
+    saque = input(f"Jogador {i+1}: Escreva a qualidade de saque: ")
+    bloqueio = input(f"Jogador {i+1}: Escreva a qualidade de bloqueio: ")
+    alcance = input(f"Jogador {i+1}: Escreva o alcance vertical: ")
+print("Agora que cada ténico já montou seu time, falta vocês darem um nome para eles:")
+nometime1 = input(f"Qual será o nome do seu time, {tecnico1.nome}?")
+nometime2 = input(f"Qual será o nome do seu time, {tecnico2.nome}?")
+print(f"Pronto, agora com os dois times montados, {nometime1} e {nometime2}. vamos jogar!!")
+# jogo começa a acontecer aqui
+
+#termino do jogo
+print(f"O jogo terminou o vencedor foi o {nometime1} com o técnico {tecnico1.nome}" \
+      " Agora, gostaríamos de agradecer aos dois jogadores {tecnico1.nome} e {tecnico2.nome} por participarem" \
+      " do nosso simulador de técnico de vôlei, esperamos que tenham se divertido e aprendido mais sobre o esporte." \
+      " Se quiserem jogar novamente, so clicar em S programa na opção abaixo, caso não queiramm clicam em N." \
+explicacao = input("Deseja reiniciar o programa? (S/N): ")
+if explicacao.upper() == "S":
+    import main
+      "Esperamos que após avaliem nosso jogo e deem sugestões de melhorias."\
+        "CRIADORES: \n -Isabelle Perin \n -Martin Jr \n -Murilo Motta \n -Thomas Ávila")
