@@ -31,9 +31,10 @@ class Jogador:
         self.saque = saque
         self.bloqueio = bloqueio
         self.alcance = alcance
+        self.cansaco = 0
 
     def sacar(self):
-        qualidade = random.uniform(1, 100)
+        qualidade = random.triangular(1, 100, self.saque)
         return qualidade
 
     def receber(self, qualidade: float):
@@ -51,12 +52,25 @@ class Jogador:
     def defender(self, qualidade: float):
         return random.triangular(1, 100, mode = qualidade)
 
+    def cansar(self, valor: int):
+        if self.cansaco + valor <= 100:
+            self.cansaco += valor
+        else:
+            self.cansaco = 100
+
+    def descansar(self, valor: int):
+        if self.cansaco - valor >= 0:
+            self.cansaco -= valor
+        else:
+            self.cansaco = 100
+
     
 class Time:
     """Classe que decide o jogador que executa ações"""
     def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]):
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
+        self.reservas = jogadores[6:]
         self.tecnicos = tecnicos
         self.tempos_restantes = 2
         self.substituicoes_restantes = 6
@@ -152,6 +166,7 @@ class Placar:
     PONTOS_SET = 25
     PONTOS_TIE_BREAK = 15
     SETS_PARA_VENCER = 3
+    VANTAGEM_PARA_VENCER = 2
 
     def __init__(self, times: list[Time]):
         self.times = times
@@ -172,12 +187,12 @@ class Placar:
         """Retorna True se o set não acabou"""
         pontos = list(self.pontos.values())
 
-        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1):
+        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1): # para chegar ao tie break os dois times devem ter um set a menos que o suficiente para vencer
             max_pontos = self.PONTOS_SET
         else:
             max_pontos = self.PONTOS_TIE_BREAK
 
-        return max(pontos) < max_pontos or max(pontos) - min(pontos) < 2
+        return max(pontos) < max_pontos or max(pontos) - min(pontos) < self.VANTAGEM_PARA_VENCER
 
     def partida_em_andamento(self):
         """Retorna True se a partida não acabou"""
@@ -208,6 +223,7 @@ class Partida:
         while self.placar.partida_em_andamento():
             sacador = time_sacador.escolher_sacador()
             qualidade_saque = sacador.sacar()
+            sacador.cansar(1)
             if not self.juiz.acertou_jogada(qualidade_saque):
                 self.placar.aumentar_pontos(time_receptor)
             receptor = time_receptor.escolher_receptor()
@@ -221,11 +237,17 @@ class Partida:
                 if not self.juiz.acertou_jogada(qualidade_levantamento):
                     self.placar.aumentar_pontos(time_sacador)
                 atacante = time_receptor.escolher_atacante()
-                qualidade_ataque = atacante.atacar(qualidade_ataque)
+                qualidade_ataque = atacante.atacar(qualidade_levantamento)
+                atacante.cansar(2)
                 if not self.juiz.acertou_jogada(qualidade_ataque):
                     self.placar.aumentar_pontos(time_sacador)
+                for jogador in time_receptor.rotacao:
+                    jogador.cansar(1)
+                for jogador in time_receptor.reservas:
+                    jogador.descansar(1)
                 bloqueador = time_sacador.escolher_bloqueador()
                 qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
+                bloqueador.cansar(2)
                 defensor = time_sacador.escolher_defensor()
                 qualidade_passe = defensor.defender(qualidade_bloqueio)
                 if not self.juiz.acertou_jogada(qualidade_passe):
