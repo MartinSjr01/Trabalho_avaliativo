@@ -3,6 +3,7 @@ from enum import Enum
 
 
 class Posicao (Enum):
+    """Enumeração das posições"""
     LEVANTADOR = 1
     OPOSTO = 2
     PONTEIRO = 3
@@ -12,16 +13,24 @@ class Posicao (Enum):
 
 class Tecnico:
     """Definição da classe Tecnico"""
-    def __init__(self, nome: str):
+    def __init__(self, nome: str) -> None:
         self.nome = nome
 
-    def substituir(self):
+    def substituir(self) -> None:
         ...
 
 
 class Jogador:
     """Classe que executa ações"""
-    def __init__(self, nome: str, camisa: int, posicao: Posicao, ataque: float, passe: float, levantamento: float, saque: float, bloqueio: float, alcance: float):
+
+    TAMANHO_ATRIBUTOS = 100
+    SOMA_ALPHA_BETA = 10
+    FATOR_CANSACO = 2 / 3
+
+    def __init__(
+            self, nome: str, camisa: int, posicao: Posicao, ataque: float, passe: float,
+            levantamento: float, saque: float, bloqueio: float, alcance: float
+            ) -> None:
         self.nome = nome
         self.camisa = camisa
         self.posicao = posicao
@@ -33,41 +42,52 @@ class Jogador:
         self.alcance = alcance
         self.cansaco = 0
 
-    def sacar(self):
-        qualidade = random.triangular(1, 100, self.saque)
-        return qualidade
+    def _medir_qualidade(self, alpha: float) -> float:
+        beta = (self.TAMANHO_ATRIBUTOS - alpha) + self.cansaco * self.FATOR_CANSACO
+        alpha_n = max(alpha / self.TAMANHO_ATRIBUTOS * self.SOMA_ALPHA_BETA, 1.2)
+        beta_n = max(beta / self.TAMANHO_ATRIBUTOS * self.SOMA_ALPHA_BETA, 1.2)
+        return random.betavariate(alpha_n, beta_n) * self.TAMANHO_ATRIBUTOS
 
-    def receber(self, qualidade: float):
-        return random.triangular(1, 100, mode = 100 - qualidade)
+    def sacar(self) -> float:
+        alpha = self.saque
+        return self._medir_qualidade(alpha)
 
-    def levantar(self, qualidade: float):
-        return random.triangular(1, 100, mode = qualidade)
+    def receber(self, saque_oponente: float) -> float:
+        alpha = (3 * self.passe + 2 * (self.TAMANHO_ATRIBUTOS - saque_oponente)) / 5
+        return self._medir_qualidade(alpha)
 
-    def atacar(self, qualidade: float):
-        return random.triangular(1, 100, mode = qualidade)
+    def levantar(self, passe_aliado: float) -> float:
+        alpha = (3 * self.levantamento + 2 * passe_aliado) / 5
+        return self._medir_qualidade(alpha)
 
-    def bloquear(self, qualidade: float):
-        return random.triangular(1, 100, mode = 100 - qualidade)
+    def atacar(self, levantamento_aliado: float) -> float:
+        alpha = (3 * self.ataque + 2 * levantamento_aliado) / 5
+        return self._medir_qualidade(alpha)
 
-    def defender(self, qualidade: float):
-        return random.triangular(1, 100, mode = qualidade)
+    def bloquear(self, ataque_oponente: float) -> float:
+        alpha = (2 * self.bloqueio + 5 * (self.TAMANHO_ATRIBUTOS - ataque_oponente)) / 7
+        return self._medir_qualidade(alpha)
 
-    def cansar(self, valor: int):
-        if self.cansaco + valor <= 100:
+    def defender(self, ataque_oponente: float, bloqueio_aliado: float) -> float:
+        alpha = (3 * self.passe + bloqueio_aliado + 4 * (self.TAMANHO_ATRIBUTOS - ataque_oponente)) / 8
+        return self._medir_qualidade(alpha)  
+
+    def cansar(self, valor: int) -> None:
+        if self.cansaco + valor <= self.TAMANHO_ATRIBUTOS:
             self.cansaco += valor
         else:
-            self.cansaco = 100
+            self.cansaco = self.TAMANHO_ATRIBUTOS
 
-    def descansar(self, valor: int):
+    def descansar(self, valor: int) -> None:
         if self.cansaco - valor >= 0:
             self.cansaco -= valor
         else:
-            self.cansaco = 100
+            self.cansaco = 0
 
-    
+
 class Time:
     """Classe que decide o jogador que executa ações"""
-    def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]):
+    def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]) -> None:
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
         self.reservas = jogadores[6:]
@@ -75,7 +95,7 @@ class Time:
         self.tempos_restantes = 2
         self.substituicoes_restantes = 6
 
-    def rodar(self):
+    def rodar(self) -> None:
         """Sentido horário: o jogador da posição 2 vai para o saque"""
         self.rotacao = self.rotacao[1:] + self.rotacao[:1]
 
@@ -94,7 +114,7 @@ class Time:
             self.rotacao,
             weights=[pesos[j.posicao] for j in self.rotacao],
         )[0]
-  
+
     def escolher_levantador(self, passador: Jogador) -> Jogador:
         pesos = {
             Posicao.PONTEIRO: 6,
@@ -168,22 +188,22 @@ class Placar:
     SETS_PARA_VENCER = 3
     VANTAGEM_PARA_VENCER = 2
 
-    def __init__(self, times: list[Time]):
+    def __init__(self, times: list[Time]) -> None:
         self.times = times
         self.pontos = {times[0]: 0, times[1]: 0}
         self.sets = {times[0]: 0, times[1]: 0}
 
-    def aumentar_pontos(self, time: Time):
+    def aumentar_pontos(self, time: Time) -> None:
         self.pontos[time] += 1
 
-    def aumentar_sets(self, time: Time):
+    def aumentar_sets(self, time: Time) -> None:
         self.sets[time] += 1
 
-    def zerar_pontos(self):
+    def zerar_pontos(self) -> None:
         for time in self.pontos:
             self.pontos[time] = 0
 
-    def set_em_andamento(self):
+    def set_em_andamento(self) -> bool:
         """Retorna True se o set não acabou"""
         pontos = list(self.pontos.values())
 
@@ -194,28 +214,31 @@ class Placar:
 
         return max(pontos) < max_pontos or max(pontos) - min(pontos) < self.VANTAGEM_PARA_VENCER
 
-    def partida_em_andamento(self):
+    def partida_em_andamento(self)  -> bool:
         """Retorna True se a partida não acabou"""
         return max(self.sets.values()) < self.SETS_PARA_VENCER
 
 
 class Juiz:
-    """Classe que define os erros e acertos dos jogadores"""                                                                                            
-    def acertou_jogada(self, qualidade: float):
-        return qualidade > 15
+    """Classe que define os erros e acertos dos jogadores"""
+
+    LIMIAR_ERRO = 30
+
+    def acertou_jogada(self, qualidade: float) -> bool:
+        return qualidade > self.LIMIAR_ERRO
 
 
 class Partida:
     """Classe que comandará a partida"""
-    def __init__(self, placar: Placar, juiz: Juiz):
+    def __init__(self, placar: Placar, juiz: Juiz) -> None:
         self.placar = placar
         self.times = self.placar.times
         self.juiz = juiz
 
-    def jogar_moeda(self):
+    def jogar_moeda(self) -> int:
         return random.randint(0, 1)
 
-    def disputar_partida(self):
+    def disputar_partida(self) -> None:
         indice = self.jogar_moeda()
         time_sacador = self.times[indice]
         time_receptor = self.times[1 - indice]
@@ -249,7 +272,7 @@ class Partida:
                 qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
                 bloqueador.cansar(2)
                 defensor = time_sacador.escolher_defensor()
-                qualidade_passe = defensor.defender(qualidade_bloqueio)
+                qualidade_passe = defensor.defender(qualidade_ataque, qualidade_bloqueio)
                 if not self.juiz.acertou_jogada(qualidade_passe):
                     self.juiz.aumentar_pontos(time_receptor)
 
