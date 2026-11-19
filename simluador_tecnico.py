@@ -13,11 +13,22 @@ class Posicao (Enum):
 
 class Tecnico:
     """Definição da classe Tecnico"""
-    def __init__(self, nome: str) -> None:
+    def __init__(self, nome: str, time: Time):
         self.nome = nome
+        self.time = time
+        self.tempos_restantes = 2
+        self.substituicoes_restantes = 6
 
-    def substituir(self) -> None:
-        ...
+    def substituir(self, jogador_entrando: Jogador, jogador_saindo: Jogador):
+        if self.substituicoes_restates > 0: 
+            self.time.rotacao.replace(jogador_saindo, jogador_entrando)
+            self.time.reservas.replace(jogador_entrando,jogador_saindo)
+            self.substituicoes_restantes -= 1 
+
+    def pedir_tempo(self, ):
+        if self.tempos_restantes > 0: 
+              ...
+              self.tempos_restantes -= 1 
 
 
 class Jogador:
@@ -87,13 +98,10 @@ class Jogador:
 
 class Time:
     """Classe que decide o jogador que executa ações"""
-    def __init__(self, jogadores: list[Jogador], tecnicos: list[Tecnico]) -> None:
+    def __init__(self, jogadores: list[Jogador]) -> None:
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
         self.reservas = jogadores[6:]
-        self.tecnicos = tecnicos
-        self.tempos_restantes = 2
-        self.substituicoes_restantes = 6
 
     def rodar(self) -> None:
         """Sentido horário: o jogador da posição 2 vai para o saque"""
@@ -230,10 +238,19 @@ class Juiz:
 
 class Partida:
     """Classe que comandará a partida"""
+
+    DESCANSO_TEMPO = 10
+
     def __init__(self, placar: Placar, juiz: Juiz) -> None:
         self.placar = placar
         self.times = self.placar.times
         self.juiz = juiz
+
+    def tempo(self) -> None:
+        for jogador in self.times[0]: 
+            jogador.descansar(self.DESCANSO_TEMPO)
+        for jogador in self.times[1]: 
+            jogador.descansar(self.DESCANSO_TEMPO)
 
     def jogar_moeda(self) -> int:
         return random.randint(0, 1)
