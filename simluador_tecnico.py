@@ -98,6 +98,10 @@ class Jogador:
 
 class Time:
     """Classe que decide o jogador que executa ações"""
+
+    CONSTANTE_CANSACO = 1
+    CONSTANTE_DESCANSO = 1
+
     def __init__(self, jogadores: list[Jogador]) -> None:
         self.jogadores = jogadores
         self.rotacao = jogadores[:6]
@@ -240,6 +244,7 @@ class Partida:
     """Classe que comandará a partida"""
 
     DESCANSO_TEMPO = 10
+    CANSACO_PULO = 2
 
     def __init__(self, placar: Placar, juiz: Juiz) -> None:
         self.placar = placar
@@ -263,34 +268,78 @@ class Partida:
         while self.placar.partida_em_andamento():
             sacador = time_sacador.escolher_sacador()
             qualidade_saque = sacador.sacar()
-            sacador.cansar(1)
+            sacador.cansar(self.CANSACO_PULO)
             if not self.juiz.acertou_jogada(qualidade_saque):
                 self.placar.aumentar_pontos(time_receptor)
+                time_sacador.cansar_jogadores()
+                time_receptor.cansar_jogadores()
+                time_receptor.rodar()
+                continue
             receptor = time_receptor.escolher_receptor()
             qualidade_passe = receptor.receber(qualidade_saque)
             if not self.juiz.acertou_jogada(qualidade_passe):
                 self.placar.aumentar_pontos(time_sacador)
+                time_sacador.cansar_jogadores()
+                time_receptor.cansar_jogadores()
+                continue
 
             while self.placar.set_em_andamento():
                 levantador = time_receptor.escolher_levantador()
                 qualidade_levantamento = levantador.levantar(qualidade_passe)
                 if not self.juiz.acertou_jogada(qualidade_levantamento):
                     self.placar.aumentar_pontos(time_sacador)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    break
                 atacante = time_receptor.escolher_atacante()
                 qualidade_ataque = atacante.atacar(qualidade_levantamento)
-                atacante.cansar(2)
+                atacante.cansar(self.CANSACO_PULO)
                 if not self.juiz.acertou_jogada(qualidade_ataque):
                     self.placar.aumentar_pontos(time_sacador)
-                for jogador in time_receptor.rotacao:
-                    jogador.cansar(1)
-                for jogador in time_receptor.reservas:
-                    jogador.descansar(1)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    break
+                time_sacador.cansar_jogadores()
+                time_receptor.cansar_jogadores()
                 bloqueador = time_sacador.escolher_bloqueador()
                 qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
-                bloqueador.cansar(2)
+                bloqueador.cansar(self.CANSACO_PULO)
                 defensor = time_sacador.escolher_defensor()
                 qualidade_passe = defensor.defender(qualidade_ataque, qualidade_bloqueio)
                 if not self.juiz.acertou_jogada(qualidade_passe):
                     self.juiz.aumentar_pontos(time_receptor)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    time_receptor.rodar()
+                    break
+                levantador = time_sacador.escolher_levantador()
+                qualidade_levantamento = levantador.levantar(qualidade_passe)
+                if not self.juiz.acertou_jogada(qualidade_levantamento):
+                    self.placar.aumentar_pontos(time_receptor)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    time_receptor.rodar()
+                    break
+                atacante = time_sacador.escolher_atacante()
+                qualidade_ataque = atacante.atacar(qualidade_levantamento)
+                atacante.cansar(self.CANSACO_PULO)
+                if not self.juiz.acertou_jogada(qualidade_ataque):
+                    self.placar.aumentar_pontos(time_receptor)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    time_receptor.rodar()
+                    break
+                time_sacador.cansar_jogadores()
+                time_receptor.cansar_jogadores()
+                bloqueador = time_receptor.escolher_bloqueador()
+                qualidade_bloqueio = bloqueador.bloquear(qualidade_ataque)
+                bloqueador.cansar(self.CANSACO_PULO)
+                defensor = time_receptor.escolher_defensor()
+                qualidade_passe = defensor.defender(qualidade_ataque, qualidade_bloqueio
+                if not self.juiz.acertou_jogada(qualidade_passe):
+                    self.juiz.aumentar_pontos(time_sacador)
+                    time_sacador.cansar_jogadores()
+                    time_receptor.cansar_jogadores()
+                    break
 
             self.placar.zerar_pontos()
