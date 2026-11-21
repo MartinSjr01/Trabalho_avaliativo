@@ -93,21 +93,53 @@ class Jogador:
             self.cansaco = 0
 
 
+class Tecnico:
+    """Definição da classe Tecnico"""
+
+    TEMPOS = 2
+    SUBSTUICOES = 6
+
+    def __init__(self, nome: str) -> None:
+        self.nome = nome
+        self.tempos_restantes = self.TEMPOS
+        self.substituicoes_restantes = self.SUBSTUICOES
+        self.quer_substituir = False
+        self.quer_tempo = False
+
+    def pedir_substituicao(self) -> None:
+        """Pede para realizar uma substituição"""
+        if self.substituicoes_restantes > 0:
+            self.quer_substituir = True
+            self.substituicoes_restantes -= 1
+
+    def pedir_tempo(self) -> None:
+        """Para o jogo por um tempo, descançando os jogadores"""
+        if self.tempos_restantes > 0:
+            self.quer_tempo = True
+
+
 class Time:
     """Classe que decide o jogador que executa ações"""
 
     CONSTANTE_CANSACO = 1
     CONSTANTE_DESCANSO = 1
 
-    def __init__(self, jogadores: list[Jogador]) -> None:
+    def __init__(self, jogadores: list[Jogador], tecnico: Tecnico) -> None:
         """Definição de time"""
         self.jogadores = jogadores
         self.em_quadra = jogadores[:6]
         self.reservas = jogadores[6:]
+        self.tecnico = tecnico
 
     def rodar(self) -> None:
         """Rotaciona os jogadores em quadra"""
         self.em_quadra = self.em_quadra[1:] + self.em_quadra[:1]
+
+    def substituir(self, jogador_entrando: Jogador, jogador_saindo: Jogador) -> None:
+        """Troca um jogador do banco por um na quadra"""
+        self.em_quadra.replace(jogador_saindo, jogador_entrando)
+        self.reservas.replace(jogador_entrando,jogador_saindo)
+        self.tecnico.quer_substituir = False
 
     def escolher_sacador(self) -> Jogador:
         """Retorna o jogador que irá sacar"""
@@ -248,27 +280,6 @@ class Placar:
         return max(self.sets.values()) < self.SETS_PARA_VENCER
 
 
-class Tecnico:
-    """Definição da classe Tecnico"""
-    def __init__(self, nome: str, time: Time) -> None:
-        self.nome = nome
-        self.time = time
-        self.tempos_restantes = 2
-        self.substituicoes_restantes = 6
-
-    def substituir(self, jogador_entrando: Jogador, jogador_saindo: Jogador) -> None:
-        """Troca um jogador do banco por um na quadra"""
-        if self.substituicoes_restates > 0: 
-            self.time.em_quadra.replace(jogador_saindo, jogador_entrando)
-            self.time.reservas.replace(jogador_entrando,jogador_saindo)
-            self.substituicoes_restantes -= 1 
-
-    def pedir_tempo(self) -> None:
-        """Para o jogo por um tempo, descançando os jogadores"""
-        if self.tempos_restantes > 0: 
-              self.tempos_restantes -= 1 
-
-
 class Juiz:
     """Classe que define os erros e acertos dos jogadores"""
 
@@ -293,10 +304,12 @@ class Partida:
 
     def tempo(self) -> None:
         """Descança os jogadores quando um técnico pede um tempo"""
-        for jogador in self.times[0]: 
+        for jogador in self.times[0]:
             jogador.descansar(self.DESCANSO_TEMPO)
-        for jogador in self.times[1]: 
+        for jogador in self.times[1]:
             jogador.descansar(self.DESCANSO_TEMPO)
+        self.times[0].tecnico.quer_tempo = False
+        self.times[1].tecnico.quer_tempo = False
 
     def jogar_moeda(self) -> int:
         """Decide quem começa sacando"""
@@ -309,6 +322,16 @@ class Partida:
         time_receptor = self.times[1 - indice]
 
         while self.placar.partida_em_andamento():
+            if time_sacador.tecnico.quer_substituir: #interface com player será feita no futuro
+                time_sacador.substituir(...) 
+            if time_receptor.tecnico.quer_substituir: #interface com player será feita no futuro
+                time_receptor.substituir(...)
+            if time_sacador.tecnico.quer_tempo:
+                self.tempo()
+                time_sacador.tecnico.tempos_restantes -= 1
+            elif time_receptor.tecnico.quer_tempo:
+                self.tempo()
+                time_receptor.tecnico.tempos_restantes -= 1
             sacador = time_sacador.escolher_sacador()
             qualidade_saque = sacador.sacar()
             sacador.cansar(self.CANSACO_PULO)
