@@ -22,9 +22,9 @@ class AreaAtaque (Enum):
 class Jogador:
     """Classe que executa ações"""
 
-    TAMANHO_ATRIBUTOS = 100
-    SOMA_ALPHA_BETA = 10
     FATOR_CANSACO = 2 / 3
+    SOMA_ALPHA_BETA = 10
+    TAMANHO_ATRIBUTOS = 100
 
     def __init__(
             self, nome: str, camisa: int, posicao: Posicao, ataque: float,
@@ -120,25 +120,41 @@ class Tecnico:
 
 class Time:
     """Classe que decide o jogador que executa ações"""
-
-    CONSTANTE_CANSACO = 1
-    CONSTANTE_DESCANSO = 1
-
     def __init__(self, jogadores: list[Jogador], tecnico: Tecnico) -> None:
         """Definição de time"""
         self.jogadores = jogadores
         self.em_quadra = jogadores[:6]
-        self.reservas = jogadores[6:]
+        self.setimo = jogadores[6]
+        self.reservas = jogadores[7:]
         self.tecnico = tecnico
 
     def rodar(self) -> None:
         """Rotaciona os jogadores em quadra"""
         self.em_quadra = self.em_quadra[1:] + self.em_quadra[:1]
 
-    def substituir(self, jogador_entrando: Jogador, jogador_saindo: Jogador) -> None:
+    def entra_libero(self):
+        """Faz a troca do líbero com o central"""
+        for jogador in [self.em_quadra[0], self.em_quadra[4], self.em_quadra[5]]:
+            if jogador.posicao is Posicao.CENTRAL:
+                self.em_quadra[self.em_quadra.index(jogador)] = self.setimo
+                self.setimo = jogador
+                break
+
+    def entra_central(self):
+        """Quando o líbero está na rede troca com o central"""
+        for jogador in self.em_quadra[1:4]:
+            if jogador.posicao is Posicao.LIBERO:
+                self.em_quadra[self.em_quadra.index(jogador)] = self.setimo
+                self.setimo = jogador
+                break
+    
+    def substituir(
+            self, jogador_entrando: Jogador, jogador_saindo: Jogador
+            ) -> None:
         """Troca um jogador do banco por um na quadra"""
-        self.em_quadra.replace(jogador_saindo, jogador_entrando)
-        self.reservas.replace(jogador_entrando,jogador_saindo)
+        i = self.em_quadra.index(jogador_saindo)
+        j = self.reservas.index(jogador_entrando)
+        self.em_quadra[i], self.reservas[j] = jogador_entrando, jogador_saindo
         self.tecnico.quer_substituir = False
 
     def escolher_sacador(self) -> Jogador:
@@ -168,9 +184,9 @@ class Time:
             Posicao.CENTRAL: 8,
             Posicao.LEVANTADOR: 70,
             }
-        
-        possiveis_levantadores = self.em_quadra.remove(passador) #ele escolhe quem vai levantar excluindo quem passou
-        
+        possiveis_levantadores = [
+            jogador for jogador in self.em_quadra if jogador is not passador
+            ] #ele escolhe quem vai levantar excluindo quem passou
         return random.choices(
             possiveis_levantadores,
             weights=[pesos[j.posicao] for j in self.em_quadra],
@@ -187,8 +203,9 @@ class Time:
             Posicao.CENTRAL: 20,
             Posicao.LEVANTADOR: 5,
             }
-
-        possiveis_atacantes = self.em_quadra.remove(levantador) #ele escolhe quem vai atacar excluindo quem levantou
+        possiveis_atacantes = [
+            jogador for jogador in self.em_quadra if jogador is not levantador
+            ] #ele escolhe quem vai atacar excluindo quem levantou
         atacante = random.choices(
             possiveis_atacantes,
             weights=[pesos[j.posicao] for j in self.em_quadra],
@@ -204,7 +221,6 @@ class Time:
                     area_ataque = AreaAtaque.FUNDO
             case Posicao.CENTRAL:
                 area_ataque = AreaAtaque.MEIO
-
         return (atacante, area_ataque)
 
     def escolher_bloqueadores(
@@ -228,9 +244,9 @@ class Time:
             Posicao.CENTRAL: 5,
             Posicao.LEVANTADOR: 14,
             }
-
-        possiveis_defensores = self.em_quadra.remove(bloqueadores) #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
-        
+        possiveis_defensores = [
+            jogador for jogador in self.em_quadra if jogador not in bloqueadores
+            ] #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
         return random.choices(
             possiveis_defensores,
             weights=[pesos[j.posicao] for j in self.em_quadra],
@@ -267,49 +283,50 @@ class Placar:
     def set_em_andamento(self) -> bool:
         """Retorna True se o set não acabou"""
         pontos = list(self.pontos.values())
-
         if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1): #para chegar ao tie break os dois times devem ter um set a menos que o suficiente para vencer
             max_pontos = self.PONTOS_SET
         else:
             max_pontos = self.PONTOS_TIE_BREAK
-
-        return max(pontos) < max_pontos or max(pontos) - min(pontos) < self.VANTAGEM_PARA_VENCER
+        nao_max = max(pontos) < max_pontos
+        nao_vantagem = max(pontos) - min(pontos) < self.VANTAGEM_PARA_VENCER
+        return nao_max or nao_vantagem
 
     def partida_em_andamento(self)  -> bool:
         """Retorna True se a partida não acabou"""
         return max(self.sets.values()) < self.SETS_PARA_VENCER
 
 
-class Juiz:
-    """Classe que define os erros e acertos dos jogadores"""
+class Partida:
+    """Classe que comandará a partida"""
 
+    CANSACO_PULO = 2
+    CONSTANTE_CANSACO = 1
+    CONSTANTE_DESCANSO = 1
+    DESCANSO_TEMPO = 10
     LIMIAR_ERRO = 30
+
+    def __init__(self, placar: Placar) -> None:
+        """Definição de partida"""
+        self.placar = placar
+        self.times = self.placar.times
+
+    def tempo(self) -> None:
+        """Descança os jogadores quando um técnico pede um tempo"""
+        for jogador in self.times[0].em_quadra + self.times[1].em_quadra:
+            jogador.descansar(self.DESCANSO_TEMPO)
+        self.times[0].tecnico.quer_tempo = False
+        self.times[1].tecnico.quer_tempo = False
+
+    def atualizar_cansaco(self):
+        for time in self.times:
+            for jogador in time.em_quadra:
+                jogador.cansar(self.CONSTANTE_CANSACO)
+            for jogador in time.reservas + [time.setimo]:
+                jogador.descansar(self.CONSTANTE_DESCANSO)
 
     def acertou_jogada(self, qualidade: float) -> bool:
         """Retorna True se o jogador não errou a jogada"""
         return qualidade > self.LIMIAR_ERRO
-
-
-class Partida:
-    """Classe que comandará a partida"""
-
-    DESCANSO_TEMPO = 10
-    CANSACO_PULO = 2
-
-    def __init__(self, placar: Placar, juiz: Juiz) -> None:
-        """Definição de partida"""
-        self.placar = placar
-        self.times = self.placar.times
-        self.juiz = juiz
-
-    def tempo(self) -> None:
-        """Descança os jogadores quando um técnico pede um tempo"""
-        for jogador in self.times[0]:
-            jogador.descansar(self.DESCANSO_TEMPO)
-        for jogador in self.times[1]:
-            jogador.descansar(self.DESCANSO_TEMPO)
-        self.times[0].tecnico.quer_tempo = False
-        self.times[1].tecnico.quer_tempo = False
 
     def jogar_moeda(self) -> int:
         """Decide quem começa sacando"""
@@ -335,83 +352,155 @@ class Partida:
             sacador = time_sacador.escolher_sacador()
             qualidade_saque = sacador.sacar()
             sacador.cansar(self.CANSACO_PULO)
-            if not self.juiz.acertou_jogada(qualidade_saque):
+            if not self.acertou_jogada(qualidade_saque):
                 self.placar.aumentar_pontos(time_receptor)
-                time_sacador.cansar_jogadores()
-                time_receptor.cansar_jogadores()
+                self.atualizar_cansaco()
                 time_receptor.rodar()
+                if time_sacador.em_quadra[0].posicao is Posicao.CENTRAL:
+                    time_sacador.entra_libero()
+                if time_receptor.em_quadra[0].posicao is not Posicao.CENTRAL:
+                    time_receptor.entra_libero()
+                else:
+                    time_receptor.entra_central()
+                temp = time_sacador
+                time_sacador = time_receptor
+                time_receptor = temp
+                if not self.placar.set_em_andamento():
+                    if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                        self.placar.aumentar_sets(self.times[0])
+                    else:
+                        self.placar.aumentar_sets(self.times[1])
+                    self.placar.zerar_pontos()
                 continue
             passador = time_receptor.escolher_receptor()
             qualidade_passe = passador.receber(qualidade_saque)
-            if not self.juiz.acertou_jogada(qualidade_passe):
+            if not self.acertou_jogada(qualidade_passe):
                 self.placar.aumentar_pontos(time_sacador)
-                time_sacador.cansar_jogadores()
-                time_receptor.cansar_jogadores()
+                self.atualizar_cansaco()
+                if not self.placar.set_em_andamento():
+                    if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                        self.placar.aumentar_sets(self.times[0])
+                    else:
+                        self.placar.aumentar_sets(self.times[1])
+                    self.placar.zerar_pontos()
                 continue
 
             while self.placar.set_em_andamento():
                 levantador = time_receptor.escolher_levantador(passador)
                 qualidade_levantamento = levantador.levantar(qualidade_passe)
-                if not self.juiz.acertou_jogada(qualidade_levantamento):
+                if not self.acertou_jogada(qualidade_levantamento):
                     self.placar.aumentar_pontos(time_sacador)
-                    time_sacador.cansar_jogadores()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
                     break
                 atacante, area_ataque = time_receptor.escolher_atacante(levantador)
                 qualidade_ataque = atacante.atacar(qualidade_levantamento)
                 atacante.cansar(self.CANSACO_PULO)
-                if not self.juiz.acertou_jogada(qualidade_ataque):
+                if not self.acertou_jogada(qualidade_ataque):
                     self.placar.aumentar_pontos(time_sacador)
-                    time_sacador.cansar_jogadores ()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
                     break
-                time_sacador.cansar_jogadores()
-                time_receptor.cansar_jogadores()
+                self.atualizar_cansaco()
                 bloqueadores = time_sacador.escolher_bloqueadores(area_ataque)
                 qualidade_bloqueio = 0
                 for bloqueador in bloqueadores:
                     qualidade_bloqueio += bloqueador.bloquear(qualidade_ataque)
-                qualidade_bloqueio /= len(qualidade_bloqueio)
-                bloqueador.cansar(self.CANSACO_PULO)
+                    bloqueador.cansar(self.CANSACO_PULO)
+                qualidade_bloqueio /= len(bloqueadores)
                 passador = time_sacador.escolher_defensor(bloqueadores)
                 qualidade_passe = passador.defender(qualidade_ataque, qualidade_bloqueio)
-                if not self.juiz.acertou_jogada(qualidade_passe):
+                if not self.acertou_jogada(qualidade_passe):
                     self.placar.aumentar_pontos(time_receptor)
-                    time_sacador.cansar_jogadores()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
                     time_receptor.rodar()
+                    if time_sacador.em_quadra[0].posicao is Posicao.CENTRAL:
+                        time_sacador.entra_libero()
+                    if time_receptor.em_quadra[0].posicao is not Posicao.CENTRAL:
+                        time_receptor.entra_libero()
+                    else:
+                        time_receptor.entra_central()
+                    temp = time_sacador
+                    time_sacador = time_receptor
+                    time_receptor = temp
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
                     break
-                levantador = time_sacador.escolher_levantador(atacante)
+                levantador = time_sacador.escolher_levantador(passador)
                 qualidade_levantamento = levantador.levantar(qualidade_passe)
-                if not self.juiz.acertou_jogada(qualidade_levantamento):
+                if not self.acertou_jogada(qualidade_levantamento):
                     self.placar.aumentar_pontos(time_receptor)
-                    time_sacador.cansar_jogadores()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
                     time_receptor.rodar()
+                    if time_sacador.em_quadra[0].posicao is Posicao.CENTRAL:
+                        time_sacador.entra_libero()
+                    if time_receptor.em_quadra[0].posicao is not Posicao.CENTRAL:
+                        time_receptor.entra_libero()
+                    else:
+                        time_receptor.entra_central()
+                    temp = time_sacador
+                    time_sacador = time_receptor
+                    time_receptor = temp
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
                     break
                 atacante, area_ataque = time_sacador.escolher_atacante(levantador)
                 qualidade_ataque = atacante.atacar(qualidade_levantamento)
                 atacante.cansar(self.CANSACO_PULO)
-                if not self.juiz.acertou_jogada(qualidade_ataque):
+                if not self.acertou_jogada(qualidade_ataque):
                     self.placar.aumentar_pontos(time_receptor)
-                    time_sacador.cansar_jogadores()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
                     time_receptor.rodar()
-                    break
-                time_sacador.cansar_jogadores()
-                time_receptor.cansar_jogadores()
+                    if time_sacador.em_quadra[0].posicao is Posicao.CENTRAL:
+                        time_sacador.entra_libero()
+                    if time_receptor.em_quadra[0].posicao is not Posicao.CENTRAL:
+                        time_receptor.entra_libero()
+                    else:
+                        time_receptor.entra_central()
+                    temp = time_sacador
+                    time_sacador = time_receptor
+                    time_receptor = temp
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
+                    break 
+                self.atualizar_cansaco()
                 bloqueadores = time_receptor.escolher_bloqueadores(area_ataque)
                 qualidade_bloqueio = 0
                 for bloqueador in bloqueadores:
                     qualidade_bloqueio += bloqueador.bloquear(qualidade_ataque)
-                qualidade_bloqueio /= len(qualidade_bloqueio)
-                bloqueador.cansar(self.CANSACO_PULO)
+                    bloqueador.cansar(self.CANSACO_PULO)
+                qualidade_bloqueio /= len(bloqueadores)
                 passador = time_receptor.escolher_defensor(bloqueadores)
                 qualidade_passe = passador.defender(qualidade_ataque, qualidade_bloqueio)
-                if not self.juiz.acertou_jogada(qualidade_passe):
+                if not self.acertou_jogada(qualidade_passe):
                     self.placar.aumentar_pontos(time_sacador)
-                    time_sacador.cansar_jogadores()
-                    time_receptor.cansar_jogadores()
+                    self.atualizar_cansaco()
+                    if not self.placar.set_em_andamento():
+                        if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
+                            self.placar.aumentar_sets(self.times[0])
+                        else:
+                            self.placar.aumentar_sets(self.times[1])
+                        self.placar.zerar_pontos()
                     break
-
-            self.placar.zerar_pontos()
