@@ -23,13 +23,14 @@ class Jogador:
     """Classe que executa ações"""
 
     FATOR_CANSACO = 2 / 3
+    MAXIMO_ATRIBUTOS = 250
     SOMA_ALPHA_BETA = 10
     TAMANHO_ATRIBUTOS = 100
 
     def __init__(
-            self, nome: str, camisa: int, posicao: Posicao, ataque: float,
+            self, nome: str, camisa:  int, posicao: Posicao, ataque: float,
             passe: float, levantamento: float, saque: float, bloqueio: float
-            ) -> None:
+    ) -> None:
         """Definição de jogador"""
         self.nome = nome
         self.camisa = camisa
@@ -40,6 +41,18 @@ class Jogador:
         self.saque = saque
         self.bloqueio = bloqueio
         self.cansaco = 0
+        #tratamento de erros
+        total = (
+            self.ataque + self.passe + self.levantamento + self.saque + self.bloqueio
+        )
+        if  not 0 <= total <= self.MAXIMO_ATRIBUTOS:
+            raise ValueError(
+                f"O jogador {self.nome} tem que possuir entre [0, {self.MAXIMO_ATRIBUTOS}] atributos"
+            )
+        if self.camisa < 0:
+            raise ValueError(
+                f"(O jogador {self.nome} tem um número de camisa negativo)"
+            )
 
     def _medir_qualidade(self, alpha: float) -> float:
         """Retorna um número pseudo-aleatório a partir da distribuição beta"""
@@ -100,9 +113,10 @@ class Tecnico:
     SUBSTITUICOES = 6
 
     def __init__(self, nome: str) -> None:
+        """Definição da classe técnico"""
         self.nome = nome
         self.tempos_restantes = self.TEMPOS
-        self.substituicoes_restantes = self.SUBSTUICOES
+        self.substituicoes_restantes = self.SUBSTITUICOES
         self.quer_substituir = False
         self.quer_tempo = False
 
@@ -120,16 +134,59 @@ class Tecnico:
 
 class Time:
     """Classe que decide o jogador que executa ações"""
+
+    MAXIMO_JOGADORES = 12
+    MINIMO_JOGADORES = 7
+
     def __init__(
             self, nome: str, jogadores: list[Jogador], tecnico: Tecnico
-            ) -> None:
+    ) -> None:
         """Definição de time"""
         self.nome = nome
         self.jogadores = jogadores
+        #tratamento de erros
+        if len(self.jogadores) > self.MAXIMO_JOGADORES or len(self.jogadores) < self.MINIMO_JOGADORES:
+            raise ValueError(
+                f"O time {self.nome} não tem entre [{self.MINIMO_JOGADORES}, {self.MAXIMO_JOGADORES}] jogadores"
+            )
+        camisas = [jogador.camisa for jogador in self.jogadores]
+        for camisa in camisas:
+            if camisas.count(camisa) > 1:
+                raise ValueError(
+                    f"O time {self.nome} tem camisas repetidas"
+                )
         self.em_quadra = jogadores[:6]
         self.setimo = jogadores[6]
         self.reservas = jogadores[7:]
         self.tecnico = tecnico
+        self.posicionamento_base = [
+            Posicao.LEVANTADOR, Posicao.PONTEIRO, Posicao.CENTRAL,
+            Posicao.OPOSTO, Posicao.PONTEIRO, Posicao.CENTRAL
+        ]
+        #tratamento de erros
+        for i in range(len(self.em_quadra)):
+            x = self.em_quadra[i:] + self.em_quadra[:i]
+            if x[0].posicao == Posicao.LEVANTADOR:
+                posicionamento = [False] * 6
+                for j in range(len(self.em_quadra)):
+                    if x[j].posicao == self.posicionamento_base[j] or (j in [0, 4, 5] and x[j].posicao == Posicao.LIBERO and self.posicionamento_base[j] == Posicao.CENTRAL):
+                        posicionamento[j] = True
+                if False not in posicionamento:
+                    break
+                else:
+                    raise ValueError(
+                        f"A ordem das posições do time {self.nome} não está no padrão da 5x1"
+                    )
+        if self.setimo.posicao not in (Posicao.CENTRAL, Posicao.LIBERO):
+            raise ValueError(
+                "O sétimo não é nem central nem líbero"
+            )
+        else:
+            for jogador in [self.em_quadra[0], self.em_quadra[4], self.em_quadra[5]]:
+                if (jogador.posicao == self.setimo.posicao):
+                    raise ValueError(
+                        f"Tem um {jogador.posicao} no fundo e o sétimo também é"
+                    )
 
     def rodar(self) -> None:
         """Rotaciona os jogadores em quadra"""
@@ -153,7 +210,7 @@ class Time:
 
     def substituir(
             self, jogador_entrando: Jogador, jogador_saindo: Jogador
-            ) -> None:
+    ) -> None:
         """Troca um jogador do banco por um na quadra"""
         i = self.em_quadra.index(jogador_saindo)
         j = self.reservas.index(jogador_entrando)
@@ -176,7 +233,7 @@ class Time:
         return random.choices(
             self.em_quadra,
             weights=[pesos[j.posicao] for j in self.em_quadra],
-            )[0]
+        )[0]
 
     def escolher_levantador(self, passador: Jogador) -> Jogador:
         """Retorna o jogador que irá levantar"""
@@ -186,33 +243,33 @@ class Time:
             Posicao.OPOSTO: 1,
             Posicao.CENTRAL: 8,
             Posicao.LEVANTADOR: 70,
-            }
+        }
         possiveis_levantadores = [
             jogador for jogador in self.em_quadra if jogador is not passador
-            ] #ele escolhe quem vai levantar excluindo quem passou
+        ] #ele escolhe quem vai levantar excluindo quem passou
         return random.choices(
             possiveis_levantadores,
-            weights=[pesos[j.posicao] for j in self.em_quadra],
-            )[0]
+            weights=[pesos[j.posicao] for j in possiveis_levantadores],
+        )[0]
 
     def escolher_atacante(
             self, levantador: Jogador
-            ) -> tuple[Jogador, AreaAtaque]:
-        """Retorna o jogador que irá atacar e a posição que está na rotação"""
+    ) -> tuple[Jogador, AreaAtaque]:
+        """Retorna o jogador que irá atacar e área de onde ataca"""
         pesos = {
             Posicao.PONTEIRO: 35,
             Posicao.LIBERO: 0,
             Posicao.OPOSTO: 40,
             Posicao.CENTRAL: 20,
             Posicao.LEVANTADOR: 5,
-            }
+        }
         possiveis_atacantes = [
             jogador for jogador in self.em_quadra if jogador is not levantador
-            ] #ele escolhe quem vai atacar excluindo quem levantou
+        ] #ele escolhe quem vai atacar excluindo quem levantou
         atacante = random.choices(
             possiveis_atacantes,
-            weights=[pesos[j.posicao] for j in self.em_quadra],
-            )[0]
+            weights=[pesos[j.posicao] for j in possiveis_atacantes],
+        )[0]
 
         match atacante.posicao:
             case Posicao.LEVANTADOR | Posicao.OPOSTO:
@@ -228,7 +285,7 @@ class Time:
 
     def escolher_bloqueadores(
             self, area_ataque: AreaAtaque
-            ) -> list[Jogador]:
+    ) -> list[Jogador]:
         """Retorna os jogadores que irão bloquear"""
         match area_ataque:
             case AreaAtaque.ENTRADA | AreaAtaque.MEIO: #saída bloqueia
@@ -246,14 +303,14 @@ class Time:
             Posicao.OPOSTO: 16,
             Posicao.CENTRAL: 5,
             Posicao.LEVANTADOR: 14,
-            }
+        }
         possiveis_defensores = [
             jogador for jogador in self.em_quadra if jogador not in bloqueadores
-            ] #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
+        ] #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
         return random.choices(
             possiveis_defensores,
-            weights=[pesos[j.posicao] for j in self.em_quadra],
-            )[0]
+            weights=[pesos[j.posicao] for j in possiveis_defensores],
+        )[0]
 
 
 class Placar:
@@ -267,6 +324,15 @@ class Placar:
     def __init__(self, times: list[Time]) -> None:
         """Definição de um placar"""
         self.times = times
+        #tratamento de erros
+        if len(self.times) != 2:
+            raise ValueError(
+                "Não foram criados 2 times para participar da partida"
+            )
+        if self.times[0] == self.times[1]:
+            raise ValueError(
+                "Os dois times são iguais"
+            )
         self.pontos = {times[0]: 0, times[1]: 0}
         self.sets = {times[0]: 0, times[1]: 0}
 
@@ -380,7 +446,7 @@ class Partida:
         if self.times[1].tecnico.quer_substituir: #interface com player será feita no futuro
             self.times[1].substituir(...)
 
-    def disputar_rally(self, qualidade_saque: float) -> Time:
+    def disputar_rally(self, qualidade_saque: float) -> None:
         """Loop que faz um rally acontecer, é sempore o time defensor que pontua"""
         is_saque = True
         bloqueadores, qualidade_ataque, qualidade_bloqueio = None, None, None
@@ -421,6 +487,7 @@ class Partida:
         if not self.acertou_jogada(qualidade_saque):
             self.aconteceu_ponto(self.time_atacante)
             return
+        self.disputar_rally(qualidade_saque)
         self.aconteceu_ponto(self.time_defensor)
 
     def disputar_partida(self) -> None:
