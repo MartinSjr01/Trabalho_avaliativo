@@ -1,10 +1,14 @@
-from simulador_tecnico import Jogador, Posicao, Time
+from time import sleep
+
+from simulador_tecnico import Jogador, Placar, Posicao, Time
 
 
 class Interface:
     """Classe que imprimirá textos no terminal"""
 
     LARGURA_INTERFACE = 79
+    PAUSA = 1
+    PAUSA_PONTO = 1.5
 
     def __init__(self):
         self.frases = {
@@ -31,6 +35,8 @@ class Interface:
             ]
         }
         self.limites = [40, 60, 80]
+        self.formato_time = "{:>3} {:<15}{:<11}{:>5}{:>5}{:>5}{:>5}{:>5}{:>5}"
+        self.formato_placar = "{:<2}{:<20}{:>7}{:>6}"
 
     def narrar(
             self, acao : str, jogador: Jogador, qualidade: float, errou: bool
@@ -46,7 +52,47 @@ class Interface:
         print(
             f"{jogador.nome} n°: {jogador.camisa}: {self.frases[acao][nivel_qualidade]}"
         )
+        sleep(self.PAUSA)
 
+    def mostrar_placar(self, placar: Placar, time_sacador: Time) -> None:
+        """Mostra o placar e quem saca"""
+        print(f" SET {sum(placar.sets.values()) + 1} ".center(self.LARGURA_INTERFACE))
+        print(self.formato_placar.format(
+            "", "Time", "Pontos", "Sets")
+        .center(self.LARGURA_INTERFACE))
+        for time in placar.times:
+            if time == time_sacador:
+                x = "->"
+            else:
+                x = ""
+            print(self.formato_placar.format(
+                x, time.nome, placar.pontos[time], placar.sets[time]
+            ).center(self.LARGURA_INTERFACE))
+        print("=" * self.LARGURA)
+
+    def mostrar_ponto(self, time: Time) -> None:
+        """Mostra quem fez o ponto"""
+        print(f"\n>>> PONTO do {time.nome}!")
+        self.pausa(self.PAUSA_PONTO)
+
+    def mostrar_fim_set(self, placar: Placar, vencedor: Time) -> None:
+        """Mostra o resultado do set"""
+        perdedor = (time for time in placar.times if time is not vencedor)
+        print(" FIM DO SET ".center(self.LARGURA, "="))
+        print(
+            f"{vencedor.nome} vence o set por "
+            f"{placar.pontos[vencedor]} a {placar.pontos[perdedor]}!"
+            )
+        print("=" * self.LARGURA)
+        sleep(self.PAUSA_PONTO)
+
+    def mostrar_fim_partida(self, placar: Placar) -> None:
+        """Mostra o vencedor da partida e o placar de sets"""
+        sets = max(placar.sets.values())
+        vencedor = (chave for chave, valor in placar.sets.items() if valor == sets)
+        print(" FIM DE JOGO ".center(self.LARGURA, "="))
+        print(f"{vencedor.nome} vence a partida! Sets: {sets}")
+        print("=" * self.LARGURA)
 
     def linhha_tabela(self, jogador: Jogador) -> str:
         """Monta uma linha da tabela que mostra os jogadores"""
@@ -54,15 +100,20 @@ class Interface:
             posicao = "Líbero"
         else:
             posicao = jogador.posicao.name.capitalize()
-        linha = f"{jogador.camisa:>3} {jogador.nome:<15}{posicao:<11}{jogador.cansaco:>5}{jogador.ataque:>5}{jogador.passe:>5}{jogador.levantamento:>5}{jogador.saque:>5}{jogador.bloqueio:>5}".center(self.LARGURA_INTERFACE)
+        linha = self.formato_time.format(
+            jogador.camisa, jogador.nome, posicao,
+            f"{jogador.cansaco}", f"{jogador.ataque}",
+            f"{jogador.passe}", f"{jogador.levantamento}",
+            f"{jogador.saque}", f"{jogador.bloqueio}"
+        ).center(self.LARGURA_INTERFACE)
         return linha
 
     def mostrar_time(self, time: Time) -> None:
         """Mostra os jogadores de um time"""
         print(f" {time.nome} ".center(self.LARGURA_INTERFACE, "="))
-        print(
-            f"{'N°':>3} {'Jogador':<15}{'Função':<11}{'Cansaço':>5}{'ATQ':>5}{'PAS':>5}{'LEV':>5}{'SAQ':>5}{'BLO':>5}".center(self.LARGURA_INTERFACE)
-        )
+        print(self.formato_time.format(
+            "N°", "Jogador", "Função", "Cansaço", "ATQ", "PAS", "LEV", "SAQ", "BLO"
+        ).center(self.LARGURA_INTERFACE))
         print(" Em Quadra ".center(self.LARGURA_INTERFACE, "-"))
         for jogador in time.em_quadra:
             print(self.linhha_tabela(jogador))
@@ -71,6 +122,7 @@ class Interface:
         print(" Reservas ".center(self.LARGURA_INTERFACE, "-"))
         for jogador in time.reservas:
             print(self.linhha_tabela(jogador))
+        print("=" * self.LARGURA)
 
     def perguntar_numero(self, pergunta: str, jogadores: list[Jogador]) -> Jogador:
         """Pergunta o número do jogador que entra/sai"""
