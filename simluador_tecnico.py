@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 import random
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from interface import Interface
 
 
 class Posicao(Enum):
@@ -124,7 +130,6 @@ class Tecnico:
         """Pede para realizar uma substituição"""
         if self.substituicoes_restantes > 0:
             self.quer_substituir = True
-            self.substituicoes_restantes -= 1
 
     def pedir_tempo(self) -> None:
         """Para o jogo por um tempo, descansando os jogadores"""
@@ -164,22 +169,28 @@ class Time:
             Posicao.OPOSTO, Posicao.PONTEIRO, Posicao.CENTRAL
         ]
         #tratamento de erros
-        for i in range(len(self.em_quadra)):
+        for i in range(6):
             x = self.em_quadra[i:] + self.em_quadra[:i]
-            if x[0].posicao == Posicao.LEVANTADOR:
-                posicionamento = [False] * 6
-                for j in range(len(self.em_quadra)):
-                    if x[j].posicao == self.posicionamento_base[j] or (j in [0, 4, 5] and x[j].posicao == Posicao.LIBERO and self.posicionamento_base[j] == Posicao.CENTRAL):
-                        posicionamento[j] = True
-                if False not in posicionamento:
-                    break
-                else:
+            if x[0].posicao is not Posicao.LEVANTADOR:
+                continue
+            for j in range(6):
+                esperado = self.posicionamento_base[j]
+                posicao = x[j].posicao
+                libero_valido = (
+                    posicao is Posicao.LIBERO
+                    and esperado is Posicao.CENTRAL
+                    and (i + j) % 6 in (0, 4, 5)
+                )
+                if posicao is not esperado and not libero_valido:
                     raise ValueError(
                         f"A ordem das posições do time {self.nome} não está no padrão da 5x1"
                     )
+            break
+        else:
+            raise ValueError(f"O time {self.nome} não tem levantador em quadra")
         if self.setimo.posicao not in (Posicao.CENTRAL, Posicao.LIBERO):
             raise ValueError(
-                "O sétimo não é nem central nem líbero"
+                f"O sétimo do time {self.nome} não é nem central nem líbero"
             )
         else:
             for jogador in [self.em_quadra[0], self.em_quadra[4], self.em_quadra[5]]:
@@ -212,9 +223,12 @@ class Time:
             self, jogador_entrando: Jogador, jogador_saindo: Jogador
     ) -> None:
         """Troca um jogador do banco por um na quadra"""
-        i = self.em_quadra.index(jogador_saindo)
+        titulares = self.em_quadra + [self.setimo]
+        i = titulares.index(jogador_saindo)
         j = self.reservas.index(jogador_entrando)
-        self.em_quadra[i], self.reservas[j] = jogador_entrando, jogador_saindo
+        titulares[i], self.reservas[j] = jogador_entrando, jogador_saindo
+        self.em_quadra, self.setimo = titulares[:6], titulares[6]
+        self.tecnico.substituicoes_restantes -= 1
         self.tecnico.quer_substituir = False
 
     def escolher_sacador(self) -> Jogador:
@@ -374,14 +388,20 @@ class Partida:
     DESCANSO_TEMPO = 10
     LIMIAR_ERRO = 30
 
-    def __init__(self, placar: Placar) -> None:
+    def __init__(self, placar: Placar, interface: Interface) -> None:
         """Definição de partida"""
         self.placar = placar
+        self.interface = interface
         self.times = self.placar.times
         self.time_sacador = self.times[self.jogar_moeda()]
+        self.primeiro_sacador = self.time_sacador
         self.time_atacante = None
         self.time_defensor = None
         self.organizar_time_atacante()
+        self.comandos = {
+            "1": [0, "tempo"], "2": [0, "substituicao"], "3": [0, "informacoes"],
+            "4": [1, "tempo"], "5": [1, "substituicao"], "6": [1, "informacoes"],
+        }
 
     def tempo(self) -> None:
         """Descansa os jogadores quando um técnico pede um tempo"""
@@ -390,16 +410,51 @@ class Partida:
         self.times[0].tecnico.quer_tempo = False
         self.times[1].tecnico.quer_tempo = False
 
+    def conferir_teclas(self) -> None:
+        """Executa os comandos que precisam de teclas"""
+        for tecla in self.interface.ler_teclas():
+            if tecla not in self.comandos:
+                continue
+            indice, acao = self.comandos[tecla][0], self.comandos[tecla][1]
+            match acao:
+                case "tempo":
+                    self.times[indice].tecnico.pedir_tempo()
+                case "substituicao":
+                    self.times[indice].tecnico.pedir_substituicao()
+                case "informacoes":
+                    self.interface.mostrar_time(self.times[indice])
+                    input("Enter para retomar: ")
+
+    def atender_pedidos(self) -> None:
+        """Verifica se os tecnicos pedem alguma ação"""
+        indice = self.jogar_moeda() # para escolher aleatóriamente qual técnico vai pedir tempo primeiro
+        for i in (indice, 1 - indice):
+            if self.times[i].tecnico.quer_tempo:
+                self.interface.mostrar_tempo(self.times[i])
+                self.tempo()
+                self.times[i].tecnico.tempos_restantes -= 1
+        for time in self.times:
+            if time.tecnico.quer_substituir:
+                entrando, saindo = self.interface.perguntar_substituicao(time)
+                if None not in (entrando, saindo):
+                    time.substituir(entrando, saindo)
+                    self.interface.mostrar_substituicao(time, entrando, saindo)
+                else:
+                    time.tecnico.quer_substituir = False 
+
     def atualizar_cansaco(self) -> None:
+        """Cansa os jogadores em quadra e descansa o sétimo e reservas"""
         for time in self.times:
             for jogador in time.em_quadra:
                 jogador.cansar(self.CONSTANTE_CANSACO)
             for jogador in time.reservas + [time.setimo]:
                 jogador.descansar(self.CONSTANTE_DESCANSO)
 
-    def acertou_jogada(self, qualidade: float) -> bool:
-        """Retorna True se o jogador não errou a jogada"""
-        return qualidade > self.LIMIAR_ERRO
+    def errou_jogada(self, acao: str, jogador: Jogador, qualidade: float) -> bool:
+        """Narra a jogada e retorna True se o jogador errou"""
+        errou = qualidade < self.LIMIAR_ERRO
+        self.interface.narrar(acao, jogador, qualidade, errou)
+        return errou
 
     def jogar_moeda(self) -> int:
         """Decide quem começa sacando"""
@@ -416,6 +471,7 @@ class Partida:
     def aconteceu_ponto(self, time_pontuou: Time) -> None:
         """Faz tudo que tem que acontecer após um ponto"""
         self.placar.aumentar_pontos(time_pontuou)
+        self.interface.mostrar_ponto(time_pontuou)
         self.atualizar_cansaco()
 
         if time_pontuou != self.time_sacador:
@@ -429,22 +485,13 @@ class Partida:
             self.time_sacador = time_pontuou
 
         if not self.placar.set_em_andamento():
-            if self.placar.pontos[self.times[0]] > self.placar.pontos[self.times[1]]:
-                self.placar.aumentar_sets(self.times[0])
-            else:
-                self.placar.aumentar_sets(self.times[1])
+            self.interface.mostrar_fim_set(self.placar, time_pontuou)
+            self.placar.aumentar_sets(time_pontuou)
+            self.primeiro_sacador = next(
+                time for time in self.times if time not in self.primeiro_sacador
+            )
+            self.time_sacador = self.primeiro_sacador
             self.placar.zerar_pontos()
-
-        if self.times[0].tecnico.quer_tempo:
-            self.tempo()
-            self.times[0].tecnico.tempos_restantes -= 1
-        elif self.times[1].tecnico.quer_tempo:  
-            self.tempo()
-            self.times[1].tecnico.tempos_restantes -= 1
-        if self.times[0].tecnico.quer_substituir: #interface com player será feita no futuro
-            self.times[0].substituir(...) 
-        if self.times[1].tecnico.quer_substituir: #interface com player será feita no futuro
-            self.times[1].substituir(...)
 
     def disputar_rally(self, qualidade_saque: float) -> None:
         """Loop que faz um rally acontecer, é sempore o time defensor que pontua"""
@@ -454,20 +501,22 @@ class Partida:
             if is_saque:
                 passador = self.time_atacante.escolher_receptor()
                 qualidade_passe = passador.receber(qualidade_saque)
+                acao = "receber"
                 is_saque = False
             else:
                 passador = self.time_atacante.escolher_defensor(bloqueadores)
                 qualidade_passe = passador.defender(qualidade_ataque, qualidade_bloqueio)
-            if not self.acertou_jogada(qualidade_passe):
+                acao = "defender"
+            if self.errou_jogada(acao, passador, qualidade_passe):
                 return
             levantador = self.time_atacante.escolher_levantador(passador)
             qualidade_levantamento = levantador.levantar(qualidade_passe)
-            if not self.acertou_jogada(qualidade_levantamento):
+            if self.errou_jogada("levantar", levantador, qualidade_levantamento):
                 return
             atacante, area_ataque = self.time_atacante.escolher_atacante(levantador)
             qualidade_ataque = atacante.atacar(qualidade_levantamento)
             atacante.cansar(self.CANSACO_PULO)
-            if not self.acertou_jogada(qualidade_ataque):
+            if self.errou_jogada("atacar", atacante, qualidade_ataque):
                 return
             self.atualizar_cansaco()
             bloqueadores = self.time_defensor.escolher_bloqueadores(area_ataque)
@@ -476,6 +525,7 @@ class Partida:
                 qualidade_bloqueio += bloqueador.bloquear(qualidade_ataque)
                 bloqueador.cansar(self.CANSACO_PULO)
             qualidade_bloqueio /= len(bloqueadores)
+            self.interface.narrar_bloqueio(bloqueadores, qualidade_bloqueio)
             self.time_atacante, self.time_defensor = self.time_defensor, self.time_atacante
 
     def disputar_ponto(self) -> None:
@@ -484,7 +534,7 @@ class Partida:
         sacador = self.time_sacador.escolher_sacador()
         qualidade_saque = sacador.sacar()
         sacador.cansar(self.CANSACO_PULO)
-        if not self.acertou_jogada(qualidade_saque):
+        if self.errou_jogada("sacar", sacador, qualidade_saque):
             self.aconteceu_ponto(self.time_atacante)
             return
         self.disputar_rally(qualidade_saque)
@@ -493,4 +543,12 @@ class Partida:
     def disputar_partida(self) -> None:
         """Contém o loop que faz a partida acontecer"""
         while self.placar.partida_em_andamento():
+            self.interface.mostrar_placar(self.placar, self.time_sacador)
+            for time in self.times:
+                self.interface.mostrar_comandos(time.tecnico, self.placar)
             self.disputar_ponto()
+            if not self.placar.partida_em_andamento():
+                break
+            self.conferir_teclas()
+            self.atender_pedidos()
+        self.interface.mostrar_fim_partida(self.placar)

@@ -1,9 +1,13 @@
-import msvcrt
 import select
 import sys
 from time import sleep
 
 from simulador_tecnico import Jogador, Placar, Posicao, Tecnico, Time
+
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
 
 
 class Interface:
@@ -45,7 +49,7 @@ class Interface:
         self.formato_time = "{:>3} {:<15}{:<11}{:>8}{:>5}{:>5}{:>5}{:>5}{:>5}"
         self.formato_placar = "{:<2}{:<20}{:>7}{:>6}"
 
-    def nivel_qualidade(self, qualidade: float) -> None:
+    def nivel_qualidade(self, qualidade: float) -> int:
         nivel_qualidade = 1
         for limite in self.limites:
             if qualidade >= limite:
@@ -151,6 +155,22 @@ class Interface:
             print(self.linha_tabela(jogador))
         print("=" * self.LARGURA_INTERFACE)
 
+    def mostrar_tempo(self, time: Time) -> None:
+        """Avisa que um time pediu tempo"""
+        print(f"\n>>> TEMPO pedido por {time.nome}! Os jogadores descansam.")
+        sleep(self.PAUSA_PONTO)
+
+    def mostrar_substituicao(
+            self, time: Time, entrando: Jogador, saindo: Jogador
+    ) -> None:
+        """Avisa que uma substituição foi feita"""
+        print(
+            f"\n>>> SUBSTITUIÇÃO no {time.nome}: "
+            f"sai {saindo.nome} n°{saindo.camisa}, "
+            f"entra {entrando.nome} n°{entrando.camisa}"
+        )
+        sleep(self.PAUSA_PONTO)
+
     def perguntar_numero(self, pergunta: str, jogadores: list[Jogador]) -> Jogador | None:
         """Pergunta o número do jogador que entra/sai; None se o usuário desistir"""
         while True:
@@ -177,13 +197,13 @@ class Interface:
                 return (None, None)
             self.mostrar_time(time)
             saindo = self.perguntar_numero(
-                "Escreva o n° da camisa de quem sai (<0 para sair)", 
+                "Escreva o n° da camisa de quem sai (<0 para sair): ", 
                 time.em_quadra + [time.setimo]
             )
             if saindo is None:
                 return (None, None)
             entrando = self.perguntar_numero(
-                "Escreva o n° da camisa de quem entra (<0 para sair)"
+                "Escreva o n° da camisa de quem entra (<0 para sair): "
                 , time.reservas
             )
             if entrando is None:
@@ -196,16 +216,12 @@ class Interface:
     def mostrar_comandos(self, tecnico: Tecnico, placar: Placar) -> None:
         """Mostra as teclas do técnico e quantos pedidos ainda restam"""
         if tecnico == placar.times[0].tecnico:
-            tempo = 1
-            substituicao = 2
-            informacoes = 3
+            tempo, substituicao, informacoes = 1, 2, 3
         else:
-            tempo = 4
-            substituicao = 5
-            informacoes = 6
+            tempo, substituicao, informacoes = 4, 5, 6
         print(
-            f"[{tempo}] pedir tempo ({tecnico.tempos_restantes})"
-            f"[{substituicao}] substituir ({tecnico.substituicoes_restantes})"
+            f"[{tempo}] pedir tempo ({tecnico.tempos_restantes})\n"
+            f"[{substituicao}] substituir ({tecnico.substituicoes_restantes})\n"
             f"[{informacoes}] informações"
         )
     
