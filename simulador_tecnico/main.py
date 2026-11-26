@@ -1,10 +1,25 @@
 from modules.interface import Interface
-from modules.simulador import Placar, Tecnico
+from modules.simulador import Placar, Tecnico, Posicao, Jogador, Time
 
 
 MAXIMO_NOME_TIME = 20
 MAXIMO_NOME_JOGADOR = 15
 SIGLAS_ATRIBUTOS = ("ATQ", "PAS", "LEV", "SAQ", "BLO")
+funcoes = {
+    "levantador": Posicao.LEVANTADOR, "lev": Posicao.LEVANTADOR,
+    "oposto" : Posicao.OPOSTO, "opo": Posicao.OPOSTO,
+    "ponteiro": Posicao.PONTEIRO, "pon": Posicao.PONTEIRO,
+    "central": Posicao.CENTRAL, "cen": Posicao.CENTRAL,
+    "libero": Posicao.LIBERO, "lib": Posicao.LIBERO,
+    "líbero" : Posicao.LIBERO, "líb": Posicao.LIBERO
+}
+funcoes_titulares = {
+    Posicao.LEVANTADOR: 1,
+    Posicao.OPOSTO: 1,
+    Posicao.PONTEIRO: 2,
+    Posicao.CENTRAL: 2,
+    Posicao.LIBERO: 1
+}
 
 
 def mostrar_introducao() -> None:
@@ -59,42 +74,198 @@ def mostrar_informacoes_importantes() -> None:
     )
     print("-" * Interface.LARGURA_INTERFACE)
 
+def reg_titulares() -> list[Jogador]:
+    """Registra os jogadores titulares"""
+    titulares = []
+    while len(titulares) < 7:
+        nome = input(f"Jogador {len(titulares)+1}: Escreva o nome do jogador: ")
+        if len(nome) > MAXIMO_NOME_JOGADOR:
+            print(f"O nome do jogador deve ter no máximo {MAXIMO_NOME_JOGADOR} caracteres.")
+            continue
+        camisa = input(f"Jogador {len(titulares)+1}: Escreva o numero da camisa: ")
+        if not camisa.isdigit():
+            print("O número da camisa deve ser um número inteiro.")
+            continue
+        camisa = int(camisa)
+        if camisa in [jogador.camisa for jogador in titulares]:
+            print("O número da camisa já está em uso. Escolha outro número.")
+            continue
+        posicao = input(f"Jogador {len(titulares)+1}: Escreva qual a posição do jogador: ")
+        posicao = posicao.lower()
+        if posicao not in funcoes:  
+            print(
+                "Posição inválida. Escolha entre levantador (lev), oposto (opo)," 
+                " ponteiro (pon), central (cen) ou líbero/libero (líb)/(lib)."
+            )
+            continue
+        posicao = funcoes[posicao]
+        quantidade = 0
+        for jogador in titulares:
+            if jogador.posicao == posicao:
+                quantidade += 1
+        if quantidade + 1 > funcoes_titulares[posicao]:
+            print(f"Você já tem o número máximo de jogadores para a posição {posicao.name}.")
+            continue
+        ataque = input(f"Jogador {len(titulares)+1}: Escreva a qualidade de ataque: ")
+        if not ataque.isdigit():
+            print("O ataque deve ser um NÚMERO real.")
+            continue
+        ataque = int(ataque)
+        if not 0 <= ataque <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O ataque tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue  
+        passe = input(f"Jogador {len(titulares)+1}: Escreva a qualidade de passe: ")
+        if not passe.isdigit():
+            print("O passe deve ser um NÚMERO real.")
+            continue
+        if not 0 <= passe <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O passe tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        levantamento= input(f"Jogador {len(titulares)+1}: Escreva a qualidade de levantamento: ")
+        if not passe.isdigit():
+            print("O levantamento deve ser um NÚMERO real.")
+            continue
+        if not 0 <= levantamento <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O levantamento tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        saque = input(f"Jogador {len(titulares)+1}: Escreva a qualidade de saque: ")
+        if not saque.isdigit():
+            print("O saque deve ser um NÚMERO real.")
+            continue
+        if not 0 <= saque <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O saque tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        bloqueio = input(f"Jogador {len(titulares)+1}: Escreva a qualidade de bloqueio: ")
+        if not bloqueio.isdigit():
+                print("O bloqueio deve ser um NÚMERO real.")
+                continue
+        if not 0 <= bloqueio <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O bloqueio tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue  
+        if sum((ataque, passe, levantamento, bloqueio, saque)) > Jogador.MAXIMO_ATRIBUTOS:
+            print(f"A soma de todos os atributos tem que ser menor ou igual a {Jogador.MAXIMO_ATRIBUTOS}")
+        titulares.append(Jogador(nome, camisa, posicao, ataque, passe, levantamento, saque, bloqueio))
+    return titulares
 
-print("Agora que você ja sabe as regras do jogo e como ele funciona vamos começar!")
-nome_tecnico1 = input("Tecnico 1: Escreva o seu nome:")
-time_tecnico1 = input("Tecnico 1: Escreva o nome do seu time:")
-tecnico1 = Tecnico(nome_tecnico1, time_tecnico1)
-nome_tecnico2 = input("Tecnico 2: Escreva o seu nome:")
-time_tecnico2 = input("Tecnico 2: Escreva o nome do seu time:")
-tecnico2 = Tecnico(nome_tecnico2, time_tecnico2)
-n = int(input(f"Quantos jogadores o {tecnico1.nome} terá? (mínimo 7 e máximo 16): "))
-for i in range(n):
-    nome = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    camisa = input(f"Jogador {i+1}: Escreva o numero da camisa: ")
-    posicao = input(f"Jogador {i+1}: Escreva qual a posição do jogador: ") 
-    ataque = input(f"Jogador {i+1}: Escreva a qualidade de ataque: ")
-    passe = input(f"Jogador {i+1}: Escreva a qualidade de passe: ")
-    levantamento= input(f"Jogador {i+1}: Escreva a qualidade de levantamento: ")
-    saque = input(f"Jogador {i+1}: Escreva a qualidade de saque: ")
-    bloqueio = input(f"Jogador {i+1}: Escreva a qualidade de bloqueio: ")
-    alcance = input(f"Jogador {i+1}: Escreva o alcance vertical: ")
-m = int(input(f"Quantos jogadores o {tecnico2.nome} terá? (mínimo 7 e máximo 16): "))
-for i in range(m):
-    nome = input(f"Jogador {i+1}: Escreva o nome do jogador: ")
-    camisa = input(f"Jogador {i+1}: Escreva o numero da camisa: ")
-    posicao = input(f"Jogador {i+1}: Escreva qual a posição do jogador: ") 
-    ataque = input(f"Jogador {i+1}: Escreva a qualidade de ataque: ")
-    passe = input(f"Jogador {i+1}: Escreva a qualidade de passe: ")
-    levantamento= input(f"Jogador {i+1}: Escreva a qualidade de levantamento: ")
-    saque = input(f"Jogador {i+1}: Escreva a qualidade de saque: ")
-    bloqueio = input(f"Jogador {i+1}: Escreva a qualidade de bloqueio: ")
-    alcance = input(f"Jogador {i+1}: Escreva o alcance vertical: ")
-print("Agora que cada ténico já montou seu time, falta vocês darem um nome para eles:")
-nometime1 = input(f"Qual será o nome do seu time, {tecnico1.nome}?")
-nometime2 = input(f"Qual será o nome do seu time, {tecnico2.nome}?")
-print(f"Pronto, agora com os dois times montados, {nometime1} e {nometime2}. vamos jogar!!")
-# jogo começa a acontecer aqui
+def reg_reservas(
+        titulares: list[Jogador]
+) -> list[Jogador]:
+    """Registra os jogadores reservas"""  
+    while True:
+        quantidade_reservas = input("Quantos reservas:")
+        if not quantidade_reservas.isdigit:
+            print("Escreva um numero, não um caracter.")
+            continue
+        quantidade_reservas = int(quantidade_reservas)
+        break
+    reservas = []
+    while len(reservas) < quantidade_reservas:
+        nome = input(f"Jogador {len(reservas)+1}: Escreva o nome do jogador: ")
+        if len(nome) > MAXIMO_NOME_JOGADOR:
+            print(f"O nome do jogador deve ter no máximo {MAXIMO_NOME_JOGADOR} caracteres.")
+            continue
+        camisa = input(f"Jogador {len(reservas)+1}: Escreva o numero da camisa: ")
+        if not camisa.isdigit():
+            print("O número da camisa deve ser um número inteiro.")
+            continue
+        camisa = int(camisa)
+        if camisa in [jogador.camisa for jogador in reservas + titulares]:
+            print("O número da camisa já está em uso. Escolha outro número.")
+            continue
+        posicao = input(f"Jogador {len(reservas)+1}: Escreva qual a posição do jogador: ")
+        posicao = posicao.lower()
+        if posicao not in funcoes:  
+            print(
+                "Posição inválida. Escolha entre levantador (lev), oposto (opo)," 
+                " ponteiro (pon), central (cen) ou líbero/libero (líb)/(lib)."
+            )
+            continue
+        posicao = funcoes[posicao]
+        ataque = input(f"Jogador {len(reservas)+1}: Escreva a qualidade de ataque: ")
+        if not ataque.isdigit():
+            print("O ataque deve ser um NÚMERO real.")
+            continue
+        ataque = int(ataque)
+        if not 0 <= ataque <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O ataque tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue  
+        passe = input(f"Jogador {len(reservas)+1}: Escreva a qualidade de passe: ")
+        if not passe.isdigit():
+            print("O passe deve ser um NÚMERO real.")
+            continue
+        if not 0 <= passe <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O passe tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        levantamento= input(f"Jogador {len(reservas)+1}: Escreva a qualidade de levantamento: ")
+        if not passe.isdigit():
+            print("O levantamento deve ser um NÚMERO real.")
+            continue
+        if not 0 <= levantamento <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O levantamento tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        saque = input(f"Jogador {len(reservas)+1}: Escreva a qualidade de saque: ")
+        if not saque.isdigit():
+            print("O saque deve ser um NÚMERO real.")
+            continue
+        if not 0 <= saque <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O saque tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue 
+        bloqueio = input(f"Jogador {len(reservas)+1}: Escreva a qualidade de bloqueio: ")
+        if not bloqueio.isdigit():
+                print("O bloqueio deve ser um NÚMERO real.")
+                continue
+        if not 0 <= bloqueio <= Jogador.TAMANHO_ATRIBUTOS:
+            print(
+                "O bloqueio tem que estar entre 0 a 100, você digitou um numero invávido."
+            )
+            continue  
+        if sum((ataque, passe, levantamento, bloqueio, saque)) > Jogador.MAXIMO_ATRIBUTOS:
+            print(f"A soma de todos os atributos tem que ser menor ou igual a {Jogador.MAXIMO_ATRIBUTOS}")
+        reservas.append(Jogador(nome, camisa, posicao, ataque, passe, levantamento, saque, bloqueio))
+        return reservas
 
+def reg_tecnico() -> Tecnico:
+    while True:
+        nome_tecnico = input("Escreva seu nome:")
+        if nome_tecnico > MAXIMO_NOME_JOGADOR:
+            print(
+            f"Você extrapolou o número de caracteres!!"
+            )
+            continue
+        return Tecnico(nome_tecnico)
+
+def montar_time() -> Time:
+    while True:
+        nome_time = input("Escreva o nome do seu time")
+        if nome_time > MAXIMO_NOME_JOGADOR:
+            print(f"Você passou o número máximo de caracteres")
+            continue
+        return Time(nome_time, reg_titulares() + reg_reservas(), reg_tecnico())
+
+def main():
+    mostrar_introducao()
+    mostrar_regras_basicas()
+    mostrar_informacoes_importantes()
+    
+    
 #termino do jogo
 print(f"O jogo terminou o vencedor foi o {nometime1} com o técnico {tecnico1.nome}" \
       " Agora, gostaríamos de agradecer aos dois jogadores {tecnico1.nome} e {tecnico2.nome} por participarem" \
