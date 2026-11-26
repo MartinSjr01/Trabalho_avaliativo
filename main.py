@@ -1,31 +1,64 @@
+from interface import Interface
+from simulador_tecnico import Placar, Tecnico
 
-from simulador_tecnico import *
-"""EXPLICAÇÃO DO JOGO"""
-print("O simulador de técnico de vôlei é passeado em como você montaria o seu time e iria lidar com as consequências de suas escolhas.")
-print("Se lembre, todo pedido de tempo, substituição e qualquer outro acontecimento influenciam no jogo!!!")
-explicacao = input("Deseja relembrar as regras do jogo? (S/N): ")
-if explicacao.upper() == "S":
+
+MAXIMO_NOME_TIME = 20
+MAXIMO_NOME_JOGADOR = 15
+SIGLAS_ATRIBUTOS = ("ATQ", "PAS", "LEV", "SAQ", "BLO")
+
+
+def mostrar_introducao() -> None:
+    """Apresenta o simulador"""
+    print(" SIMULADOR DE TÉCNICO DE VÔLEI ".center(Interface.LARGURA_INTERFACE, "="))
     print(
-        " O jogo é dividido em 2 times, onde cada um tem 6 jogadores em quadra e mais o líbero. O seu time pontua quando ocorre quando " \
-        "a bola toca no chão da quadra adversária ou uma falta acontece.Falta ocorrem quando: \
-             -A bola tocar no time adversário e depois bater no lado de fora da quadra;" \
-             "-O time adversário tocar na rede durante um ponto;" \ 
-             "-O time adversário tocar na bola mais de 3 vezes;" \
-             "-Durante o saque se o jogador adversário pisar na quadra"
-             
-             
-              
-        "Lembrando que, o técnico designa 7 jogadores para cada uma das respetivas posições:" \
-        " -1->Levantador: responsável por levantar a bola para os atacantes;" \
-        " -1->Oposto: responsável por atacar a bola principalment;" \
-        " -2->Ponteiro: reponsável por atacar e o passe;" \
-        " -2->Central: reponsável por bloquear e atacar;" \
-        " -1->Líbero: responsável pelo passe e defender a bola[não podendo atacar];" \
-        )
-print("A partir das funções dos jogadores, o técnico pode escolher a rotação do time, fazer substituições e pedir tempo. Um set só acaba" \
-      "quando um time atinge 25 pontos e a diferença entre os pontos é menor do que dois," \
-      "é melhor de 3 sets, isto é, é necessário ganhar 2 sets para vencer a partida. Caso aja um empate de 1 set para cada time, acontecerá um terceiro até 15 pontos."
-      )
+        "-> O simulador de técnico de vôlei depende de como você monta o seu time.\n"
+        "-> Você pode pedir:\n"
+        f"\t- Tempo (Total de {Tecnico.TEMPOS}).\n"
+        f"\t- Substituições (Total de {Tecnico.SUBSTITUICOES}).\n"
+        "-> Suas ações interferem e influenciam o jogo!"
+    )
+    print("=" * Interface.LARGURA_INTERFACE)
+
+
+def mostrar_regras_basicas() -> None:
+    """Relembra as regras básicas do vôlei"""
+    print(
+        "\n"
+        "O jogo é disputado entre 2 times, cada um tem 7 jogadores titulares, 6 em\n"
+        "quadra e mais um sétimo que alterna com o líbero ou central. O seu time\n"
+        "pontua quando a bola toca no chão da quadra adversária ou uma falta\n"
+        "acontece. Faltas ocorrem quando:\n"
+        "\t-A bola tocar no time adversário e depois bater no lado de fora da quadra;"
+        "\n\t-O time adversário tocar na rede durante um ponto;\n"
+        "\t-O time adversário tocar na bola mais de 3 vezes;\n"
+        "\t-Durante o saque se o jogador adversário pisar na quadra\n"
+        "\n"
+        "Os titulares devem ter as seguintes funções:\n"
+        "\t-> 1 Levantador: responsável por levantar a bola para os atacantes;\n"
+        "\t-> 1 Oposto: responsável por atacar a bola;\n"
+        "\t-> 2 Ponteiros: responsáveis por atacar, passar e bloquear;\n"
+        "\t-> 2 Centrais: responsáveis por bloquear e atacar;\n"
+        "\t-> 1 Líbero: dedicado ao passe (não pode atacar).\n"
+    )
+
+
+def mostrar_informacoes_importantes() -> None:
+    """Explica as regras do simulador"""
+    sets_total = 2 * Placar.SETS_PARA_VENCER - 1
+    sets_empate = Placar.SETS_PARA_VENCER - 1
+    print(" INFORMAÇÕES IMPORTANTES ".center(Interface.LARGURA_INTERFACE, "-"))
+    print(
+        "O técnico pode escolher a posição inicial dos jogadores, fazer substituições"
+        "\ne pedir tempo. Um set só acaba quando um time atinge "
+        f"{Placar.PONTOS_SET} pontos e a"
+        f"\ndiferença entre os pontos é de pelo menos {Placar.VANTAGEM_PARA_VENCER}. "
+        f"A partida é melhor de {sets_total} sets,"
+        f"\nisto é, é necessário ganhar {Placar.SETS_PARA_VENCER} sets para vencer. "
+        f"Caso haja empate em {sets_empate} a {sets_empate},"
+        f"\nacontecerá um desempate até {Placar.PONTOS_TIE_BREAK} pontos."
+    )
+    print("-" * Interface.LARGURA_INTERFACE)
+
 
 print("Agora que você ja sabe as regras do jogo e como ele funciona vamos começar!")
 nome_tecnico1 = input("Tecnico 1: Escreva o seu nome:")
@@ -70,5 +103,5 @@ print(f"O jogo terminou o vencedor foi o {nometime1} com o técnico {tecnico1.no
 explicacao = input("Deseja reiniciar o programa? (S/N): ")
 if explicacao.upper() == "S":
     import main
-      "Esperamos que após avaliem nosso jogo e deem sugestões de melhorias."\
+      "Esperamos que após avaliem nosso jogo e deem sugestões de melhorias."
         "CRIADORES: \n -Isabelle Perin \n -Martin Jr \n -Murilo Motta \n -Thomas Ávila")
