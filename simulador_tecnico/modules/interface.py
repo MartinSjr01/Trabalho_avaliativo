@@ -2,7 +2,7 @@ import select
 import sys
 from time import sleep
 
-from simulador_tecnico import Jogador, Placar, Posicao, Tecnico, Time
+from simulador import Jogador, Placar, Posicao, Tecnico, Time
 
 try:
     import msvcrt

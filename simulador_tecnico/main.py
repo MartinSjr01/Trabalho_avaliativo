@@ -1,5 +1,5 @@
-from interface import Interface
-from simulador_tecnico import Placar, Tecnico
+from modules.interface import Interface
+from modules.simulador import Placar, Tecnico
 
 
 MAXIMO_NOME_TIME = 20
