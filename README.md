@@ -1,6 +1,6 @@
 # Trabalho_avaliativo
 
-## SIMULADOR DE TECNICO DE VOLEIBOL (Jogo simulando uma partida de volei, onde voce e o tecnico)
+
 
 ```mermaid 
  classDiagram
