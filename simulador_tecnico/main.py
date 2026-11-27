@@ -1,7 +1,7 @@
 from time import sleep
 
 from modules.interface import Interface
-from modules.simulador import Jogador, Placar, Posicao, Tecnico, Time
+from modules.simulador import Jogador, Partida, Placar, Posicao, Tecnico, Time
 
 MAXIMO_NOME_TIME = 20
 MAXIMO_NOME_JOGADOR = 15
@@ -244,11 +244,53 @@ def montar_time() -> Time:
     jogadores = organizar_jogadores(titulares + reservas)
     return Time(nome_time, jogadores, nome_tecnico)
 
+def criar_times_genéricos() -> tuple[Time]:
+    time_1 = Time(
+        "Tigres",
+        [
+            Jogador("Bruno", 1, Posicao.LEVANTADOR, 40, 60, 100, 55, 40),
+            Jogador("Marina", 9, Posicao.PONTEIRO, 90, 70, 20, 65, 45),
+            Jogador("Camila", 12, Posicao.CENTRAL, 70, 30, 15, 50, 100),
+            Jogador("Rafael", 10, Posicao.OPOSTO, 100, 40, 10, 80, 65),
+            Jogador("Thiago", 7, Posicao.PONTEIRO, 85, 80, 10, 60, 50),
+            Jogador("Beatriz", 14, Posicao.CENTRAL, 75, 35, 5, 55, 95),
+            Jogador("Carolina", 3, Posicao.LIBERO, 5, 100, 100, 5, 5),
+            Jogador("André", 11, Posicao.PONTEIRO, 80, 65, 20, 60, 45),
+            Jogador("Felipe", 15, Posicao.CENTRAL, 65, 30, 15, 50, 90),
+        ],
+        Tecnico("Larissa")
+    )
+    time_2 = Time(
+        "Falcões",
+        [
+            Jogador("Fernanda", 2, Posicao.LEVANTADOR, 45, 55, 95, 60, 40),
+            Jogador("Leandro", 8, Posicao.PONTEIRO, 88, 75, 20, 62, 45),
+            Jogador("Juliana", 13, Posicao.CENTRAL, 72, 30, 5, 58, 98),
+            Jogador("Vitor", 11, Posicao.OPOSTO, 98, 40, 10, 82, 55),
+            Jogador("Leticia", 6, Posicao.PONTEIRO, 82, 82, 10, 68, 50),
+            Jogador("Patricia", 15, Posicao.CENTRAL, 70, 35, 15, 50, 95),
+            Jogador("Samuel", 4, Posicao.LIBERO, 5, 100, 100, 5, 5),
+            Jogador("Otávio", 17, Posicao.PONTEIRO, 78, 68, 20, 60, 45),
+            Jogador("Amanda", 18, Posicao.CENTRAL, 62, 30, 15, 52, 88),
+        ],
+        Tecnico("Roberto")
+    )
+    return (time_1, time_2)
+
 def main() -> None:
     mostrar_introducao()
     if perguntar_sim_nao("Deseja relembrar algumas regras do vôlei? "):
         mostrar_regras_basicas()
     mostrar_informacoes_importantes()
+    if perguntar_sim_nao("Deseja utilizar times de exemplo? "):
+        time1, time2 = criar_times_genéricos()
+    else:
+        print(" TIME 1 ".center(Interface.LARGURA_INTERFACE, "-"))
+        time1 = montar_time()
+        print(" TIME 2 ".center(Interface.LARGURA_INTERFACE, "-"))
+        time2 = montar_time()
+    partida = Partida(Placar([time1, time2]), Interface())
+    partida.disputar_partida()
 
 if __name__ == "__main__":
     main()

@@ -548,7 +548,6 @@ class Partida:
             self.interface.mostrar_placar(self.placar, self.time_sacador)
             for time in self.times:
                 self.interface.mostrar_comandos(time.tecnico, self.placar)
-            for time in self.times:
                 time.entra_central()
                 time.entra_libero()
             self.disputar_ponto()

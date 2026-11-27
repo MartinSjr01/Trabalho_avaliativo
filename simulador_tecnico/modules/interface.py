@@ -48,6 +48,7 @@ class Interface:
         self.limites = [40, 60, 80]
         self.formato_time = "{:>3} {:<15}{:<11}{:>8}{:>5}{:>5}{:>5}{:>5}{:>5}"
         self.formato_placar = "{:<2}{:<20}{:>7}{:>6}"
+        self.formato_comandos = "{:<15}{:<25}{:<25}{:<15}"
 
     def nivel_qualidade(self, qualidade: float) -> int:
         nivel_qualidade = 1
@@ -87,7 +88,7 @@ class Interface:
 
     def mostrar_placar(self, placar: Placar, time_sacador: Time) -> None:
         """Mostra o placar e quem saca"""
-        print(f" SET {sum(placar.sets.values()) + 1} ".center(self.LARGURA_INTERFACE))
+        print(f" SET {sum(placar.sets.values()) + 1} ".center(self.LARGURA_INTERFACE, "="))
         print(self.formato_placar.format(
             "", "Time", "Pontos", "Sets")
         .center(self.LARGURA_INTERFACE))
@@ -216,14 +217,15 @@ class Interface:
     def mostrar_comandos(self, tecnico: Tecnico, placar: Placar) -> None:
         """Mostra as teclas do técnico e quantos pedidos ainda restam"""
         if tecnico == placar.times[0].tecnico:
-            tempo, substituicao, informacoes = 1, 2, 3
+            tempo, substituicao, informacoes = "1", "2", "3"
         else:
-            tempo, substituicao, informacoes = 4, 5, 6
-        print(
-            f"[{tempo}] pedir tempo ({tecnico.tempos_restantes})\n"
-            f"[{substituicao}] substituir ({tecnico.substituicoes_restantes})\n"
+            tempo, substituicao, informacoes = "4", "5", "6"
+        print(self.formato_comandos.format(
+            f"{tecnico.nome}:",
+            f"[{tempo}] pedir tempo ({tecnico.tempos_restantes})",
+            f"[{substituicao}] substituir ({tecnico.substituicoes_restantes})",
             f"[{informacoes}] informações"
-        )
+        ))
     
     def ler_teclas(self) -> list[str]:
         """Retorna as teclas pressionadas sem parar o jogo"""
