@@ -1,6 +1,6 @@
 # Trabalho_avaliativo
 
-## SIMULADOR DE TECNICO DE VOLEIBOL(Jogo simulado de volei, onde voce e o tecnico)
+## SIMULADOR DE TECNICO DE VOLEIBOL (Jogo simulando uma partida de volei, onde voce e o tecnico)
 
 ```mermaid 
  classDiagram
@@ -23,7 +23,7 @@ direction TB
     }
 
     class Jogador {
-        +float FATOR_CANSACO
+        +int FATOR_CANSACO
         +int MAXIMO_ATRIBUTOS
         +int SOMA_ALPHA_BETA
         +int TAMANHO_ATRIBUTOS
@@ -38,13 +38,14 @@ direction TB
         +float cansaco
         +__init__(nome: str, camisa: int, posicao: Posicao, ataque: float, passe: float, levantamento: float, saque: float, bloqueio: float): void
         -_medir_qualidade(alpha: float): float
-        +sacar(): float
-        +receber(saqueoponente: float): float
-        +levantar(passealiado: float): float 
-        +bloquear(ataque_oponente: float): float
-        +defender(ataque_oponente: float, bloqueio_aliado: float): float
-        +cansar(valor: int): void
-        +descansar(valor: int): void
+        +sacar() float
+        +receber(saque_oponente: float) float
+        +levantar(passe_aliado: float) float 
+        +atacar(levantamento_aliado: float) float
+        +bloquear(ataque_oponente: float) float
+        +defender(ataque_oponente: float, bloqueio_aliado: float) float
+        +cansar(valor: int) void
+        +descansar(valor: int) void
 
     }
 
@@ -52,21 +53,21 @@ direction TB
     class Tecnico {
         +int TEMPOS
         +int SUBSTITUICOES
-        +__init__(nome: str): void
+        +__init__(nome: str) void
         +str nome
         +int tempos_restantes
         +int substituicoes_restantes
         +bool quer_substituir
         +bool quer_tempo
-        +pedir_substituicao(): void
-        +pedir_tempo(): void
+        +pedir_substituicao() void
+        +pedir_tempo() void
     }
 
 
     class Time {
         +int MAXIMO_JOGADORES
         +int MINIMO_JOGADORES
-        +__init__(nome: str, jogadores: list~Jogador~, tecnico: Tecnico): void
+        +__init__(nome: str, jogadores: list~Jogador~, tecnico: Tecnico) void
         +str nome
         +list~Jogador~ jogadores
         +list~Jogador~ em_quadra
@@ -75,15 +76,15 @@ direction TB
         +Tecnico tecnico
         +list~Posicao~ posicionamento_base
         +rodar(): void
-        +entra_libero(): void
-        +entra_central(): void
-        +substituir(jogador_entrando: Jogador, jogador_saindo: Jogador): void
-        +escolher_sacador(): Jogador
-        +escolher_receptor(): Jogador
-        +escolher_levantador(passador: Jogador): Jogador
-        +escolher_atacante(levantador: Jogador): tuple~Jogador, AreaAtaque~
-        +escolher_bloqueadores(area_ataque: AreaAtaque): list~Jogador~
-        +escolher_defensor(bloqueadores: list~Jogador~): Jogador
+        +entra_libero() void
+        +entra_central() void
+        +substituir(jogador_entrando: Jogador, jogador_saindo: Jogador) void
+        +escolher_sacador() Jogador
+        +escolher_receptor() Jogador
+        +escolher_levantador(passador: Jogador) Jogador
+        +escolher_atacante(levantador: Jogador) tuple~Jogador, AreaAtaque~
+        +escolher_bloqueadores(area_ataque: AreaAtaque) list~Jogador~
+        +escolher_defensor(bloqueadores: list~Jogador~) Jogador
 
     }
 
@@ -91,15 +92,16 @@ direction TB
         +int PONTOS_SET
         +int PONTOS_TIE_BREAK
         +int SETS_PARA_VENCER
+        +int VANTAGEM_PARA_VENCER
         +list~Time~ times
         +dict~Time, int~ pontos
         +dict~Time, int~ sets
-        +__init__(times: list~Time~): void
-        +aumentar_pontos(time: Time): void
-        +aumentar_sets(time: Time): void
-        +zerar_pontos(): void
-        +set_em_andamento(): bool
-        +partida_em_andamento(): bool
+        +__init__(times: list~Time~) void
+        +aumentar_pontos(time: Time) void
+        +aumentar_sets(time: Time) void
+        +zerar_pontos() void
+        +set_em_andamento() bool
+        +partida_em_andamento() bool
     }
 
     class Interface{
@@ -112,20 +114,20 @@ direction TB
         +str formato_time
         +str formato_placar
         +__init__() void
-        +nivel_qualidade(qualidade: float): int
-        +narrar(acao: str, jogador: Jogador, qualidade: float, errou: bool): void
-        +narrar_bloqueio(bloqueadores: list~jogador~, qualidade: float): void
-        +mostrar_placar(placar: Placar, time_sacador: Time): void
-        +mostrar_ponto(time: Time): void
-        +mostrar_fim_set(placar: Placar, vencedor: Time): void
-        +mostrar_fim_partida(placar: Placar): void
-        +linha_tabela(jogador: Jogador): str
-        +mostrar_time(time: Time): void
-        +mostrar_tempo(time: Time): void
-        +mostrar_substituicao(time: Time, entrando: Jogador, saindo: Jogador): void
-        +perguntar_numero(pergunta: str, jogadores: list~Jogador~): Opticional~Jogador~
-        +perguntar_subtituicao(time: Time): tuple~Optional~Jogador~, Optional~Jogador~~
-        +mostrar_comandos(tecnico: Tecnico, placar: Placar): void
+        +nivel_qualidade(qualidade: float) int
+        +narrar(acao: str, jogador: Jogador, qualidade: float, errou: bool) void
+        +narrar_bloqueio(bloqueadores: list~Jogador~, qualidade: float) void
+        +mostrar_placar(placar: Placar, time_sacador: Time) void
+        +mostrar_ponto(time: Time) void
+        +mostrar_fim_set(placar: Placar, vencedor: Time) void
+        +mostrar_fim_partida(placar: Placar) void
+        +linha_tabela(jogador: Jogador) str
+        +mostrar_time(time: Time) void
+        +mostrar_tempo(time: Time) void
+        +mostrar_substituicao(time: Time, entrando: Jogador, saindo: Jogador) void
+        +perguntar_numero(pergunta: str, jogadores: list~Jogador~) Optional~Jogador~
+        +perguntar_substituicao(time: Time) tuple~Optional~Jogador~, Optional~Jogador~~
+        +mostrar_comandos(tecnico: Tecnico, placar: Placar) void
         +ler_teclas(): list~str~
     }
 
@@ -138,30 +140,27 @@ direction TB
         +Placar placar
         +Interface interface
         +list~Time~ times
-        +__init__(placar: Placar, interface: Interface): void
-        +Placar placar 
-        +Interface interface 
-        +list~Time~ times
+        +__init__(placar: Placar, interface: Interface) void
         +Time time_sacador
         +Time primeiro_sacador 
         +Time time_atacante 
         +Time time_defensor 
         +dict~str, list~ comandos
         +tempo(): void
-        +conferir_teclas(): void
-        +atender_pedidos(): void
-        +atualizar_cansaco(): void
-        +errou_jogada(acao: str, jogador: Jogador, qualidade: float): bool
-        +jogar_moeda(): int
-        +organizar_time_atacante(): void
-        +aconteceu_ponto(time_pontuou: Time): void
-        +disputar_rally(qualidade_saque: float): void
-        +disputar_ponto(): void
-        +disputar_partida(): void
+        +conferir_teclas() void
+        +atender_pedidos() void
+        +atualizar_cansaco() void
+        +errou_jogada(acao: str, jogador: Jogador, qualidade: float) bool
+        +jogar_moeda() int
+        +organizar_time_atacante() void
+        +aconteceu_ponto(time_pontuou: Time) void
+        +disputar_rally(qualidade_saque: float) void
+        +disputar_ponto() void
+        +disputar_partida() void
     }
 
-    Partida "1" --> "1" Placar : usa
-    Partida "1" --> "1" Interface : usa
+    Partida "1" --> "1" Placar : atualiza
+    Partida "1" --> "1" Interface : exibe pela
     Partida "1" --> "2" Time : times
     Placar "1" --> "2" Time : times
     Time "1" o-- "7..12" Jogador : jogadores
