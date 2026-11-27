@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from interface import Interface
+    from .interface import Interface
 
 
 class Posicao(Enum):
@@ -29,7 +29,7 @@ class Jogador:
     """Classe que executa ações"""
 
     FATOR_CANSACO = 2 / 3
-    MAXIMO_ATRIBUTOS = 250
+    MAXIMO_ATRIBUTOS = 300
     SOMA_ALPHA_BETA = 10
     TAMANHO_ATRIBUTOS = 100
 
@@ -47,7 +47,7 @@ class Jogador:
         self.saque = saque
         self.bloqueio = bloqueio
         self.cansaco = 0
-        #tratamento de erros
+        # tratamento de erros
         total = (
             self.ataque + self.passe + self.levantamento + self.saque + self.bloqueio
         )
@@ -142,6 +142,12 @@ class Time:
 
     MAXIMO_JOGADORES = 12
     MINIMO_JOGADORES = 7
+    # posicionamento das funções com o levantador na 1; colocado fora do __init__
+    # pois preciso utilizar antes de criar um time no main
+    posicionamento_base = [  # noqa: RUF012
+        Posicao.LEVANTADOR, Posicao.PONTEIRO, Posicao.CENTRAL,
+        Posicao.OPOSTO, Posicao.PONTEIRO, Posicao.CENTRAL
+    ]
 
     def __init__(
             self, nome: str, jogadores: list[Jogador], tecnico: Tecnico
@@ -149,7 +155,7 @@ class Time:
         """Definição de time"""
         self.nome = nome
         self.jogadores = jogadores
-        #tratamento de erros
+        # tratamento de erros
         if len(self.jogadores) > self.MAXIMO_JOGADORES or len(self.jogadores) < self.MINIMO_JOGADORES:
             raise ValueError(
                 f"O time {self.nome} não tem entre [{self.MINIMO_JOGADORES}, {self.MAXIMO_JOGADORES}] jogadores"
@@ -164,11 +170,7 @@ class Time:
         self.setimo = jogadores[6]
         self.reservas = jogadores[7:]
         self.tecnico = tecnico
-        self.posicionamento_base = [
-            Posicao.LEVANTADOR, Posicao.PONTEIRO, Posicao.CENTRAL,
-            Posicao.OPOSTO, Posicao.PONTEIRO, Posicao.CENTRAL
-        ]
-        #tratamento de erros
+        # tratamento de erros
         for i in range(6):
             x = self.em_quadra[i:] + self.em_quadra[:i]
             if x[0].posicao is not Posicao.LEVANTADOR:
@@ -260,7 +262,7 @@ class Time:
         }
         possiveis_levantadores = [
             jogador for jogador in self.em_quadra if jogador is not passador
-        ] #ele escolhe quem vai levantar excluindo quem passou
+        ] # ele escolhe quem vai levantar excluindo quem passou
         return random.choices(
             possiveis_levantadores,
             weights=[pesos[j.posicao] for j in possiveis_levantadores],
@@ -279,7 +281,7 @@ class Time:
         }
         possiveis_atacantes = [
             jogador for jogador in self.em_quadra if jogador is not levantador
-        ] #ele escolhe quem vai atacar excluindo quem levantou
+        ] # ele escolhe quem vai atacar excluindo quem levantou
         atacante = random.choices(
             possiveis_atacantes,
             weights=[pesos[j.posicao] for j in possiveis_atacantes],
@@ -302,11 +304,11 @@ class Time:
     ) -> list[Jogador]:
         """Retorna os jogadores que irão bloquear"""
         match area_ataque:
-            case AreaAtaque.ENTRADA | AreaAtaque.MEIO: #saída bloqueia
+            case AreaAtaque.ENTRADA | AreaAtaque.MEIO: # saída bloqueia
                 return self.em_quadra[1:3]
-            case AreaAtaque.SAIDA: #entrada bloqueia
+            case AreaAtaque.SAIDA: # entrada bloqueia
                 return self.em_quadra[2:4]
-            case AreaAtaque.FUNDO: #todos bloqueiam
+            case AreaAtaque.FUNDO: # todos bloqueiam
                 return self.em_quadra[1:4]
 
     def escolher_defensor(self, bloqueadores: list[Jogador]) -> Jogador:
@@ -320,7 +322,7 @@ class Time:
         }
         possiveis_defensores = [
             jogador for jogador in self.em_quadra if jogador not in bloqueadores
-        ] #ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
+        ] # ele nao deixa o bloqueador defender, e deixa quem nao foi bloquear defender
         return random.choices(
             possiveis_defensores,
             weights=[pesos[j.posicao] for j in possiveis_defensores],
@@ -338,7 +340,7 @@ class Placar:
     def __init__(self, times: list[Time]) -> None:
         """Definição de um placar"""
         self.times = times
-        #tratamento de erros
+        # tratamento de erros
         if len(self.times) != 2:
             raise ValueError(
                 "Não foram criados 2 times para participar da partida"
@@ -366,7 +368,7 @@ class Placar:
     def set_em_andamento(self) -> bool:
         """Retorna True se o set não acabou"""
         pontos = list(self.pontos.values())
-        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1): #para chegar ao tie break os dois times devem ter um set a menos que o suficiente para vencer
+        if sum(self.sets.values()) < 2 * (self.SETS_PARA_VENCER - 1): # para chegar ao tie break os dois times devem ter um set a menos que o suficiente para vencer
             max_pontos = self.PONTOS_SET
         else:
             max_pontos = self.PONTOS_TIE_BREAK
@@ -488,7 +490,7 @@ class Partida:
             self.interface.mostrar_fim_set(self.placar, time_pontuou)
             self.placar.aumentar_sets(time_pontuou)
             self.primeiro_sacador = next(
-                time for time in self.times if time not in self.primeiro_sacador
+                time for time in self.times if time is not self.primeiro_sacador
             )
             self.time_sacador = self.primeiro_sacador
             self.placar.zerar_pontos()
@@ -546,6 +548,9 @@ class Partida:
             self.interface.mostrar_placar(self.placar, self.time_sacador)
             for time in self.times:
                 self.interface.mostrar_comandos(time.tecnico, self.placar)
+            for time in self.times:
+                time.entra_central()
+                time.entra_libero()
             self.disputar_ponto()
             if not self.placar.partida_em_andamento():
                 break
