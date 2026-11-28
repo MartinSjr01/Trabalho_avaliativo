@@ -14,11 +14,11 @@ class Interface:
     """Classe que imprimirá textos no terminal"""
 
     LARGURA_INTERFACE = 79
-    PAUSA = 1
-    PAUSA_PONTO = 1.5
+    _PAUSA = 1
+    _PAUSA_PONTO = 1.5
 
     def __init__(self) -> None:
-        self.frases = {
+        self._frases = {
         "sacar": [
             "errou o saque", "saque fraco", "saque regular",
             "bom saque", "saque excelente",
@@ -41,16 +41,16 @@ class Interface:
             "boa defesa", "defesa espetacular",
             ]
         }
-        self.bloqueios = [
+        self._bloqueios = [
             "bloqueio fraco", "bloqueio regular", 
             "bom bloqueio", "bloqueio fechado"
         ]
-        self.limites = [40, 60, 80]
-        self.formato_time = "{:>3} {:<15}{:<11}{:>8}{:>5}{:>5}{:>5}{:>5}{:>5}"
-        self.formato_placar = "{:<2}{:<20}{:>7}{:>6}"
-        self.formato_comandos = "{:<15}{:<25}{:<25}{:<15}"
+        self._limites = [40, 60, 80]
+        self._formato_time = "{:>3} {:<15}{:<11}{:>8}{:>5}{:>5}{:>5}{:>5}{:>5}"
+        self._formato_placar = "{:<2}{:<20}{:>7}{:>6}"
+        self._formato_comandos = "{:<15}{:<25}{:<25}{:<15}"
 
-    def nivel_qualidade(self, qualidade: float) -> int:
+    def _nivel_qualidade(self, qualidade: float) -> int:
         nivel_qualidade = 1
         for limite in self.limites:
             if qualidade >= limite:
@@ -126,7 +126,7 @@ class Interface:
         print(f"{vencedor.nome} vence a partida! Sets: {sets}")
         print("=" * self.LARGURA_INTERFACE)
 
-    def linha_tabela(self, jogador: Jogador) -> str:
+    def _linha_tabela(self, jogador: Jogador) -> str:
         """Monta uma linha da tabela que mostra os jogadores"""
         if jogador.posicao is Posicao.LIBERO:
             posicao = "Líbero"
@@ -172,7 +172,7 @@ class Interface:
         )
         sleep(self.PAUSA_PONTO)
 
-    def perguntar_numero(self, pergunta: str, jogadores: list[Jogador]) -> Jogador | None:
+    def _perguntar_numero(self, pergunta: str, jogadores: list[Jogador]) -> Jogador | None:
         """Pergunta o número do jogador que entra/sai; None se o usuário desistir"""
         while True:
             resposta = input(pergunta).strip()
